@@ -26,15 +26,15 @@ export default function TabLayout() {
       <Tabs.Screen
         name="group"
         options={{
-          title: 'Group',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="person.2.fill" color={color} />,
+          title: 'Club',
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="group" color={color} />,
         }}
       />
       <Tabs.Screen
         name="list"
         options={{
-          title: 'List',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="list.bullet" color={color} />,
+          title: 'Pertandingan',
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="sportscourt.fill" color={color} />,
         }}
       />
       <Tabs.Screen

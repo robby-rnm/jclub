@@ -1,11 +1,12 @@
-import { StyleSheet, ScrollView, TouchableOpacity, View, Image, Alert } from 'react-native';
+import { StyleSheet, ScrollView, TouchableOpacity, View, Image, Alert, ActivityIndicator } from 'react-native';
 import { ThemedText as Text } from '@/components/themed-text';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { useSession } from '../../ctx';
 import { api } from '@/services/api';
+import { useState, useCallback } from 'react';
 
 const PRIMARY_GREEN = '#3E8E41';
 const DANGER_RED = '#D32F2F';
@@ -14,14 +15,25 @@ export default function ProfileScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const { signOut, session } = useSession();
+    const [user, setUser] = useState<any>(null);
+    const [loading, setLoading] = useState(true);
 
-    // Mock User Data
-    const user = {
-        name: 'Robby Maulana',
-        email: 'robby@example.com',
-        avatar: 'https://i.pravatar.cc/150?u=robby',
-        phone: '081234567890',
-        memberSince: 'Januari 2026'
+    useFocusEffect(
+        useCallback(() => {
+            loadProfile();
+        }, [])
+    );
+
+    const loadProfile = async () => {
+        try {
+            const data = await api.getProfile();
+            setUser(data);
+        } catch (e) {
+            console.error(e);
+            // If failed, maybe token expired or network error
+        } finally {
+            setLoading(false);
+        }
     };
 
     const handleSignOut = () => {
@@ -35,7 +47,6 @@ export default function ProfileScreen() {
                     style: "destructive",
                     onPress: () => {
                         signOut();
-                        // navigation handled by ctx or layout usually, but for sure:
                         router.replace('/login');
                     }
                 }
@@ -54,8 +65,6 @@ export default function ProfileScreen() {
                     style: "destructive",
                     onPress: async () => {
                         try {
-                            // Assuming 'api' is imported or defined elsewhere, e.g., from a utility file
-                            // import * as api from '../../api';
                             await api.deleteAccount();
                             signOut();
                             router.replace('/login');
@@ -68,6 +77,29 @@ export default function ProfileScreen() {
         );
     };
 
+    if (loading) {
+        return (
+            <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+                <ActivityIndicator size="large" color={PRIMARY_GREEN} />
+            </View>
+        );
+    }
+
+    if (!user) {
+        return (
+            <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+                <Text>Gagal memuat profil</Text>
+                <TouchableOpacity onPress={loadProfile} style={{ marginTop: 16 }}>
+                    <Text style={{ color: PRIMARY_GREEN }}>Coba Lagi</Text>
+                </TouchableOpacity>
+            </View>
+        );
+    }
+
+    // Fallbacks
+    const avatarUri = user.Avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.Name)}&background=3E8E41&color=fff`;
+    const memberDate = user.CreatedAt ? new Date(user.CreatedAt).toLocaleDateString('id-ID', { month: 'long', year: 'numeric' }) : 'Unknown';
+
     return (
         <View style={styles.container}>
             <StatusBar style="light" />
@@ -76,16 +108,12 @@ export default function ProfileScreen() {
             <View style={[styles.header, { paddingTop: insets.top + 20 }]}>
                 <View style={styles.headerContent}>
                     <View style={styles.avatarContainer}>
-                        {/* Fallback to text if no image, but using mock image for now */}
-                        <Image source={{ uri: user.avatar }} style={styles.avatarImage} />
-                        <View style={styles.editBadge}>
-                            <Ionicons name="pencil" size={14} color="#fff" />
-                        </View>
+                        <Image source={{ uri: avatarUri }} style={styles.avatarImage} />
                     </View>
-                    <Text style={styles.userName}>{user.name}</Text>
-                    <Text style={styles.userEmail}>{user.email}</Text>
+                    <Text style={styles.userName}>{user.Name}</Text>
+                    <Text style={styles.userEmail}>{user.Email}</Text>
                     <View style={styles.memberTag}>
-                        <Text style={styles.memberTagText}>Member sejak {user.memberSince}</Text>
+                        <Text style={styles.memberTagText}>Member sejak {memberDate}</Text>
                     </View>
                 </View>
             </View>

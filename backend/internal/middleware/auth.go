@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -14,13 +15,23 @@ func AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
+			fmt.Println("[Middleware] Missing Authorization Header")
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Authorization header required"})
 			c.Abort()
 			return
 		}
 
+		if len(authHeader) > 10 {
+			fmt.Println("[Middleware] Auth Header found:", authHeader[:10]+"...")
+		} else {
+			fmt.Println("[Middleware] Auth Header found (short):", authHeader)
+		}
+
 		tokenString := strings.Replace(authHeader, "Bearer ", "", 1)
 		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+				return nil, http.ErrAbortHandler // Or specific error
+			}
 			return SecretKey, nil
 		})
 

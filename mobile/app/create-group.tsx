@@ -1,11 +1,11 @@
 import { StyleSheet, ScrollView, TouchableOpacity, TextInput, Switch, Platform, Pressable } from 'react-native';
 import { View } from 'react-native';
 import { ThemedText as Text } from '@/components/themed-text';
-import { useRouter, Stack } from 'expo-router';
+import { useRouter, Stack, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { api } from '@/services/api';
 
 const PRIMARY_GREEN = '#3E8E41';
@@ -15,6 +15,8 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 
 export default function CreateGroupScreen() {
     const router = useRouter();
+
+    const { clubId } = useLocalSearchParams();
 
     // Form State
     const [name, setName] = useState('');
@@ -32,9 +34,57 @@ export default function CreateGroupScreen() {
     const [time, setTime] = useState(new Date());
     const [showTimePicker, setShowTimePicker] = useState(false);
 
+    // Master Data State
+    const [sports, setSports] = useState<any[]>([]);
+    const [selectedSport, setSelectedSport] = useState<any>(null);
+    const [positionQuotas, setPositionQuotas] = useState<{ [key: string]: string }>({});
+    const [isCustomPrice, setIsCustomPrice] = useState(false);
+    const [positionPrices, setPositionPrices] = useState<{ [key: string]: string }>({});
+
+    useEffect(() => {
+        loadSports();
+    }, []);
+
+    const loadSports = async () => {
+        try {
+            const data = await api.getSports();
+            setSports(data);
+            if (data.length > 0) {
+                selectSport(data[0]);
+            }
+        } catch (e) {
+            console.error(e);
+            alert("Failed to load sports");
+        }
+    };
+
+    const selectSport = (sport: any) => {
+        setSelectedSport(sport);
+        setGameType(sport.name);
+
+        // Initialize quotas from default values
+        const initialQuotas: { [key: string]: string } = {};
+        const initialPrices: { [key: string]: string } = {};
+        let total = 0;
+        sport.positions.forEach((pos: any) => {
+            initialQuotas[pos.code] = pos.default_quota.toString();
+            initialPrices[pos.code] = price;
+            total += pos.default_quota;
+        });
+        setPositionQuotas(initialQuotas);
+        setPositionPrices(initialPrices);
+        // setSlots(total.toString()); // Optional: Auto-set slots?
+    };
+
+    const updateQuota = (code: string, val: string) => {
+        setPositionQuotas(prev => ({ ...prev, [code]: val }));
+    };
+
+    const updatePositionPrice = (code: string, val: string) => {
+        setPositionPrices(prev => ({ ...prev, [code]: val }));
+    };
+
     const onDateChange = (event: any, selectedDate?: Date) => {
-        // On Web, event.nativeEvent.timestamp might effectively be the value, 
-        // but typically selectedDate is passed correctly by the library wrapper.
         const currentDate = selectedDate || date;
         if (Platform.OS === 'android') {
             setShowDatePicker(false);
@@ -78,24 +128,65 @@ export default function CreateGroupScreen() {
         }
     };
 
-    const handleCreate = async () => {
+    const handleCreate = async (status: 'draft' | 'published') => {
         if (!name || !location) {
             alert("Please fill all fields");
             return;
         }
+
+        if (!clubId) {
+            alert("Error: No Club ID found. Please create a schedule from a Club.");
+            return;
+        }
+
+        // Parse quotas & prices
+        const quotas: { [key: string]: number } = {};
+        const prices: { [key: string]: number } = {};
+        let totalQuota = 0;
+
+        if (selectedSport) {
+            // positionQuotas now only contains selected positions
+            Object.keys(positionQuotas).forEach(key => {
+                const val = parseInt(positionQuotas[key]) || 0;
+                quotas[key] = val;
+                totalQuota += val;
+
+                // Price logic
+                if (isCustomPrice) {
+                    prices[key] = parseInt(positionPrices[key]) || parseInt(price);
+                } else {
+                    prices[key] = parseInt(price);
+                }
+            });
+        } else {
+            // Fallback if no sport selected (shouldn't happen)
+            quotas['player'] = parseInt(slots);
+            prices['player'] = parseInt(price);
+            totalQuota = parseInt(slots); // Fix validation bypass logic here if needed
+        }
+
+        // Auto-update total slots to match quota if sport matches
+        // Or strictly validate. Let's validate.
+        if (totalQuota !== parseInt(slots)) {
+            alert(`Total quota (${totalQuota}) does not match Total Slots (${slots})`);
+            return;
+        }
+
         setLoading(true);
         try {
-            await api.createMatch({
+            await api.createMatch(clubId as string, {
                 title: name,
                 description: description,
                 game_type: gameType,
                 location: location,
-                price: parseInt(price),
+                price: parseInt(price), // Default/Base price
                 max_players: parseInt(slots),
+                position_quotas: JSON.stringify(quotas),
+                position_prices: JSON.stringify(prices),
                 date: date.toISOString().split('T')[0],
                 time: time.toTimeString().split(' ')[0].substring(0, 5)
-            });
-            alert("Match Created!");
+            }, status);
+            alert(status === 'draft' ? "Draft Saved!" : "Match Published!");
             router.back();
         } catch (e: any) {
             alert(e.message || "Failed to create");
@@ -115,7 +206,7 @@ export default function CreateGroupScreen() {
                     <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
                         <Ionicons name="arrow-back" size={24} color="#000" />
                     </TouchableOpacity>
-                    <Text style={styles.headerTitle}>Buat Group Main</Text>
+                    <Text style={styles.headerTitle}>Buat Jadwal</Text>
                     <View style={{ width: 40 }} />
                 </View>
             </SafeAreaView>
@@ -128,26 +219,26 @@ export default function CreateGroupScreen() {
                     <View style={styles.formGroup}>
                         <Text style={styles.label}>Tipe Permainan</Text>
                         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexDirection: 'row', marginBottom: 4 }}>
-                            {['Mini Soccer', 'Futsal', 'Badminton', 'Basket'].map((type, index) => (
+                            {sports.map((sport, index) => (
                                 <TouchableOpacity
-                                    key={type}
-                                    onPress={() => setGameType(type)}
+                                    key={sport.code}
+                                    onPress={() => selectSport(sport)}
                                     style={{
                                         paddingHorizontal: 16,
                                         paddingVertical: 8,
                                         borderRadius: 20,
-                                        backgroundColor: gameType === type ? PRIMARY_GREEN : '#F5F5F5',
+                                        backgroundColor: selectedSport?.code === sport.code ? PRIMARY_GREEN : '#F5F5F5',
                                         marginRight: 8,
                                         borderWidth: 1,
-                                        borderColor: gameType === type ? PRIMARY_GREEN : '#E0E0E0'
+                                        borderColor: selectedSport?.code === sport.code ? PRIMARY_GREEN : '#E0E0E0'
                                     }}
                                 >
                                     <Text style={{
-                                        color: gameType === type ? '#fff' : '#757575',
+                                        color: selectedSport?.code === sport.code ? '#fff' : '#757575',
                                         fontWeight: '600',
                                         fontSize: 13
                                     }}>
-                                        {type}
+                                        {sport.name}
                                     </Text>
                                 </TouchableOpacity>
                             ))}
@@ -156,7 +247,7 @@ export default function CreateGroupScreen() {
 
                     {/* Nama Group */}
                     <View style={styles.formGroup}>
-                        <Text style={styles.label}>Nama Group</Text>
+                        <Text style={styles.label}>Nama Jadwal</Text>
                         <TextInput
                             style={styles.input}
                             placeholder="Mini Soccer Jumat Fun"
@@ -203,15 +294,11 @@ export default function CreateGroupScreen() {
                                     />
                                 </View>
                             ) : (
-                                <TouchableOpacity onPress={() => setShowDatePicker((prev) => !prev)} style={styles.inputIconContainer}>
-                                    <View pointerEvents="none">
-                                        <TextInput
-                                            style={[styles.input, styles.inputWithIcon]}
-                                            placeholder="mm / dd / yyyy"
-                                            placeholderTextColor="#BDBDBD"
-                                            value={date.toLocaleDateString()}
-                                            editable={false}
-                                        />
+                                <TouchableOpacity onPress={() => setShowDatePicker(true)} style={styles.inputIconContainer}>
+                                    <View style={[styles.input, styles.inputWithIcon, { justifyContent: 'center' }]}>
+                                        <Text style={{ fontSize: 14, color: '#1C1C1E' }}>
+                                            {date.toLocaleDateString()}
+                                        </Text>
                                     </View>
                                     <Ionicons name="calendar-outline" size={20} color="#757575" style={[styles.inputIcon, { top: 12 }]} />
                                 </TouchableOpacity>
@@ -251,15 +338,11 @@ export default function CreateGroupScreen() {
                                     />
                                 </View>
                             ) : (
-                                <TouchableOpacity onPress={() => setShowTimePicker((prev) => !prev)}>
-                                    <View pointerEvents="none">
-                                        <TextInput
-                                            style={[styles.input, { textAlign: 'center' }]}
-                                            placeholder="-- : --  --"
-                                            placeholderTextColor="#BDBDBD"
-                                            value={time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                            editable={false}
-                                        />
+                                <TouchableOpacity onPress={() => setShowTimePicker(true)}>
+                                    <View style={[styles.input, { justifyContent: 'center', alignItems: 'center' }]}>
+                                        <Text style={{ fontSize: 14, color: '#1C1C1E' }}>
+                                            {time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                        </Text>
                                     </View>
                                 </TouchableOpacity>
                             )}
@@ -311,7 +394,7 @@ export default function CreateGroupScreen() {
 
                     {/* Harga per Orang */}
                     <View style={styles.formGroup}>
-                        <Text style={styles.label}>Harga per Orang</Text>
+                        <Text style={styles.label}>Harga Dasar per Orang</Text>
                         <View style={styles.inputContainer}>
                             <TextInput
                                 style={styles.input}
@@ -330,6 +413,27 @@ export default function CreateGroupScreen() {
                                     <MaterialIcons name="arrow-drop-down" size={16} color="#757575" />
                                 </TouchableOpacity>
                             </View>
+                        </View>
+
+                        <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 12, justifyContent: 'space-between' }}>
+                            <View>
+                                <Text style={{ fontSize: 14, fontWeight: '600', color: '#1C1C1E' }}>Harga Berbeda per Posisi</Text>
+                                <Text style={{ fontSize: 12, color: '#757575' }}>Atur harga khusus untuk posisi tertentu (misal GK)</Text>
+                            </View>
+                            <Switch
+                                trackColor={{ false: "#767577", true: PRIMARY_GREEN }}
+                                thumbColor={"#f4f3f4"}
+                                onValueChange={(val) => {
+                                    setIsCustomPrice(val);
+                                    // Reset prices to base price when disabling
+                                    if (!val && positionPrices) {
+                                        const resetPrices: any = {};
+                                        Object.keys(positionPrices).forEach(k => resetPrices[k] = price);
+                                        setPositionPrices(resetPrices);
+                                    }
+                                }}
+                                value={isCustomPrice}
+                            />
                         </View>
                     </View>
 
@@ -354,6 +458,124 @@ export default function CreateGroupScreen() {
                         </View>
                     </View>
 
+
+
+                    {/* Quota Settings */}
+                    <View style={styles.formGroup}>
+                        <Text style={styles.label}>Distribusi Posisi</Text>
+                        <Text style={[styles.subLabel, { marginBottom: 12 }]}>Pilih posisi yang ingin dibuka dan atur jumlah slotnya.</Text>
+
+                        <View style={{ gap: 12 }}>
+                            {selectedSport?.positions.map((pos: any) => {
+                                const isSelected = positionQuotas.hasOwnProperty(pos.code);
+                                return (
+                                    <View key={pos.code} style={{
+                                        borderWidth: 1,
+                                        borderColor: isSelected ? PRIMARY_GREEN : '#EEEEEE',
+                                        borderRadius: 12,
+                                        backgroundColor: '#fff',
+                                        padding: 12,
+                                        opacity: isSelected ? 1 : 0.6
+                                    }}>
+                                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: isSelected ? 8 : 0 }}>
+                                            <TouchableOpacity
+                                                onPress={() => {
+                                                    if (isSelected) {
+                                                        const newQuotas = { ...positionQuotas };
+                                                        delete newQuotas[pos.code];
+                                                        setPositionQuotas(newQuotas);
+                                                    } else {
+                                                        setPositionQuotas({
+                                                            ...positionQuotas,
+                                                            [pos.code]: pos.default_quota.toString()
+                                                        });
+                                                    }
+                                                }}
+                                                style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}
+                                            >
+                                                <MaterialIcons
+                                                    name={isSelected ? "check-box" : "check-box-outline-blank"}
+                                                    size={24}
+                                                    color={isSelected ? PRIMARY_GREEN : '#BDBDBD'}
+                                                />
+                                                <Text style={{ fontSize: 16, fontWeight: '600', color: '#1C1C1E' }}>{pos.name}</Text>
+                                            </TouchableOpacity>
+
+                                            {!isSelected && (
+                                                <Text style={{ fontSize: 14, color: '#9E9E9E' }}>Default: {pos.default_quota}</Text>
+                                            )}
+                                        </View>
+
+                                        {isSelected && (
+                                            <View>
+                                                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingLeft: 32, marginTop: 8 }}>
+                                                    <Text style={{ fontSize: 14, color: '#757575' }}>Jumlah Slot:</Text>
+                                                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                                                        <TouchableOpacity
+                                                            onPress={() => {
+                                                                const current = parseInt(positionQuotas[pos.code] || '0');
+                                                                if (current > 1) {
+                                                                    updateQuota(pos.code, (current - 1).toString());
+                                                                }
+                                                            }}
+                                                            style={{
+                                                                width: 32, height: 32, borderRadius: 16,
+                                                                borderWidth: 1, borderColor: '#BDBDBD',
+                                                                alignItems: 'center', justifyContent: 'center'
+                                                            }}
+                                                        >
+                                                            <MaterialIcons name="remove" size={16} color="#757575" />
+                                                        </TouchableOpacity>
+
+                                                        <View style={{ minWidth: 24, alignItems: 'center' }}>
+                                                            <Text style={{ fontSize: 16, fontWeight: '700', color: '#1C1C1E' }}>
+                                                                {positionQuotas[pos.code]}
+                                                            </Text>
+                                                        </View>
+
+                                                        <TouchableOpacity
+                                                            onPress={() => {
+                                                                const current = parseInt(positionQuotas[pos.code] || '0');
+                                                                updateQuota(pos.code, (current + 1).toString());
+                                                            }}
+                                                            style={{
+                                                                width: 32, height: 32, borderRadius: 16,
+                                                                backgroundColor: PRIMARY_GREEN,
+                                                                alignItems: 'center', justifyContent: 'center'
+                                                            }}
+                                                        >
+                                                            <MaterialIcons name="add" size={16} color="#fff" />
+                                                        </TouchableOpacity>
+                                                    </View>
+                                                </View>
+
+                                                {isCustomPrice && (
+                                                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingLeft: 32, marginTop: 12 }}>
+                                                        <Text style={{ fontSize: 14, color: '#757575' }}>Harga:</Text>
+                                                        <TextInput
+                                                            style={{
+                                                                borderBottomWidth: 1, borderBottomColor: '#E0E0E0',
+                                                                paddingVertical: 4, width: 100, textAlign: 'right',
+                                                                fontSize: 14, fontWeight: '600', color: '#1C1C1E'
+                                                            }}
+                                                            keyboardType="numeric"
+                                                            value={positionPrices[pos.code] || price}
+                                                            onChangeText={(val) => updatePositionPrice(pos.code, val.replace(/[^0-9]/g, ''))}
+                                                            placeholder={price}
+                                                        />
+                                                    </View>
+                                                )}
+                                            </View>
+                                        )}
+                                    </View>
+                                )
+                            })}
+                        </View>
+                        <Text style={[styles.subLabel, { marginTop: 12, color: '#9E9E9E' }]}>
+                            Total: {Object.values(positionQuotas).reduce((a, b) => a + (parseInt(b) || 0), 0)} (Pastikan sama dengan Total Slot)
+                        </Text>
+                    </View>
+
                     {/* Auto League Switch */}
                     <View style={styles.switchRow}>
                         <View>
@@ -373,11 +595,25 @@ export default function CreateGroupScreen() {
 
             </ScrollView >
 
-            {/* Footer Button (Optional, not in screenshot but likely needed) */}
-            < SafeAreaView edges={['bottom']} style={styles.footer} >
-                <TouchableOpacity style={[styles.createButton, loading && { opacity: 0.7 }]} onPress={handleCreate} disabled={loading}>
-                    <Text style={styles.createButtonText}>{loading ? "Creating..." : "Buat Group"}</Text>
-                </TouchableOpacity>
+            {/* Footer Buttons */}
+            <SafeAreaView edges={['bottom']} style={styles.footer}>
+                <View style={{ flexDirection: 'row', gap: 12 }}>
+                    <TouchableOpacity
+                        style={[styles.createButton, { flex: 1, backgroundColor: '#fff', borderWidth: 1, borderColor: PRIMARY_GREEN }, loading && { opacity: 0.7 }]}
+                        onPress={() => handleCreate('draft')}
+                        disabled={loading}
+                    >
+                        <Text style={[styles.createButtonText, { color: PRIMARY_GREEN }]}>{loading ? "Saving..." : "Simpan Draft"}</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        style={[styles.createButton, { flex: 1 }, loading && { opacity: 0.7 }]}
+                        onPress={() => handleCreate('published')}
+                        disabled={loading}
+                    >
+                        <Text style={styles.createButtonText}>{loading ? "Publishing..." : "Publish Sekarang"}</Text>
+                    </TouchableOpacity>
+                </View>
             </SafeAreaView >
         </View >
     );

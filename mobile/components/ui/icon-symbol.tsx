@@ -21,6 +21,8 @@ const MAPPING = {
   'person.2.fill': 'group',
   'list.bullet': 'list',
   'person.fill': 'person',
+  'sportscourt.fill': 'sports-soccer',
+  'group': 'group',
 } as IconMapping;
 
 /**

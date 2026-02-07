@@ -18,13 +18,32 @@ export default function MatchDetailScreen() {
 
     const [match, setMatch] = useState<any>(null);
     const [loading, setLoading] = useState(true);
+    const [errorMsg, setErrorMsg] = useState<string | null>(null);
+    const [currentUser, setCurrentUser] = useState<any>(null);
 
     useEffect(() => {
         if (!id) return;
-        api.getMatch(id as string)
-            .then(data => setMatch(data))
-            .catch(err => console.error(err))
-            .finally(() => setLoading(false));
+
+        const loadData = async () => {
+            try {
+                console.log("[MatchDetail] Loading for ID:", id);
+                setErrorMsg(null);
+                const [matchData, userData] = await Promise.all([
+                    api.getMatch(id as string),
+                    api.getProfile()
+                ]);
+                console.log("[MatchDetail] Match Data:", matchData ? "Found" : "Null");
+                setMatch(matchData);
+                setCurrentUser(userData);
+            } catch (err: any) {
+                console.error("[MatchDetail] Error:", err);
+                setErrorMsg(err.message || "Unknown error");
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        loadData();
     }, [id]);
 
     if (loading) {
@@ -35,16 +54,26 @@ export default function MatchDetailScreen() {
         );
     }
 
-    if (!match) {
+    if (errorMsg || !match) {
         return (
-            <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
-                <Text style={{ color: '#757575' }}>Match not found</Text>
+            <View style={[styles.container, { justifyContent: 'center', alignItems: 'center', padding: 20 }]}>
+                <Ionicons name="alert-circle-outline" size={48} color="#D32F2F" />
+                <Text style={{ fontSize: 18, fontWeight: '700', marginTop: 16 }}>Gagal Memuat Match</Text>
+                <Text style={{ color: '#757575', textAlign: 'center', marginTop: 8 }}>
+                    ID: {id}
+                </Text>
+                <Text style={{ color: '#D32F2F', textAlign: 'center', marginTop: 8 }}>
+                    Error: {errorMsg || "Match not found"}
+                </Text>
+                <TouchableOpacity onPress={() => router.replace('/(tabs)/group')} style={{ marginTop: 24, padding: 12, backgroundColor: '#E0E0E0', borderRadius: 8 }}>
+                    <Text>Kembali ke List</Text>
+                </TouchableOpacity>
             </View>
         );
     }
 
-    const currentPlayers = match.Bookings ? match.Bookings.length : 0;
-    const progress = currentPlayers / match.MaxPlayers;
+    const currentPlayers = match.bookings ? match.bookings.length : 0;
+    const progress = currentPlayers / match.max_players;
 
     // Formatting helpers (can be moved to utils)
     const formatCurrency = (amount: number) => `Rp ${amount.toLocaleString('id-ID')}`;
@@ -64,7 +93,7 @@ export default function MatchDetailScreen() {
                     <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
                         <Ionicons name="arrow-back" size={24} color="#000" />
                     </TouchableOpacity>
-                    <Text style={styles.headerTitle}>Detail Group</Text>
+                    <Text style={styles.headerTitle}>Pertandingan</Text>
                     <View style={{ width: 40 }} />
                 </View>
             </SafeAreaView>
@@ -77,13 +106,13 @@ export default function MatchDetailScreen() {
                         <View style={{ flex: 1 }}>
                             <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
                                 <View style={[styles.statusTag, { backgroundColor: '#E3F2FD', marginRight: 8, paddingHorizontal: 8, paddingVertical: 4 }]}>
-                                    <Text style={[styles.statusText, { color: '#1976D2', fontSize: 10 }]}>{match.GameType || 'Activity'}</Text>
+                                    <Text style={[styles.statusText, { color: '#1976D2', fontSize: 10 }]}>{match.game_type || 'Activity'}</Text>
                                 </View>
                                 <View style={styles.statusTag}>
                                     <Text style={styles.statusText}>Open Slot</Text>
                                 </View>
                             </View>
-                            <Text style={styles.matchTitle}>{match.Title}</Text>
+                            <Text style={styles.matchTitle}>{match.title}</Text>
                         </View>
                     </View>
 
@@ -93,7 +122,7 @@ export default function MatchDetailScreen() {
                         </View>
                         <View>
                             <Text style={styles.infoLabel}>Tanggal & Waktu</Text>
-                            <Text style={styles.infoValue}>{formatDate(match.Date)}</Text>
+                            <Text style={styles.infoValue}>{formatDate(match.date)}</Text>
                         </View>
                     </View>
 
@@ -103,7 +132,7 @@ export default function MatchDetailScreen() {
                         </View>
                         <View>
                             <Text style={styles.infoLabel}>Lokasi</Text>
-                            <Text style={styles.infoValue}>{match.Location}</Text>
+                            <Text style={styles.infoValue}>{match.location}</Text>
                         </View>
                     </View>
 
@@ -113,14 +142,14 @@ export default function MatchDetailScreen() {
                         </View>
                         <View>
                             <Text style={styles.infoLabel}>Harga per Orang</Text>
-                            <Text style={styles.infoValue}>{formatCurrency(match.Price)}</Text>
+                            <Text style={styles.infoValue}>{formatCurrency(match.price)}</Text>
                         </View>
                     </View>
 
-                    {match.Description && (
+                    {match.description && (
                         <View style={{ marginTop: 8, marginBottom: 16 }}>
                             <Text style={styles.infoLabel}>Deskripsi</Text>
-                            <Text style={[styles.infoValue, { lineHeight: 20, marginTop: 4 }]}>{match.Description}</Text>
+                            <Text style={[styles.infoValue, { lineHeight: 20, marginTop: 4 }]}>{match.description}</Text>
                         </View>
                     )}
 
@@ -130,7 +159,7 @@ export default function MatchDetailScreen() {
                         <View style={styles.progressLabels}>
                             <Text style={styles.progressLabelLeft}>Slot Terisi</Text>
                             <Text style={styles.progressLabelRight}>
-                                <Text style={{ color: PRIMARY_GREEN, fontWeight: '700' }}>{currentPlayers}</Text> / {match.MaxPlayers} Pemain
+                                <Text style={{ color: PRIMARY_GREEN, fontWeight: '700' }}>{currentPlayers}</Text> / {match.max_players} Pemain
                             </Text>
                         </View>
                         <View style={styles.progressBarBg}>
@@ -139,18 +168,31 @@ export default function MatchDetailScreen() {
                     </View>
 
                     <View style={styles.noteBox}>
-                        <Text style={styles.noteText}>💡 Masih ada {match.MaxPlayers - currentPlayers} slot tersisa. Gas join sebelum penuh!</Text>
+                        <Text style={styles.noteText}>💡 Masih ada {match.max_players - currentPlayers} slot tersisa. Gas join sebelum penuh!</Text>
                     </View>
+
+                    {match.reschedule_reason && (
+                        <View style={[styles.noteBox, { backgroundColor: '#FFF3E0', marginTop: 12 }]}>
+                            <Text style={[styles.noteText, { color: '#E65100', fontWeight: 'bold' }]}>
+                                ⚠️ Rescheduled: {match.reschedule_reason}
+                            </Text>
+                        </View>
+                    )}
                 </View>
 
-                {/* Organizer Card (Mocked for now as backend doesn't return creator) */}
+                {/* Organizer Card */}
                 <View style={styles.organizerCard}>
                     <View style={styles.avatar}>
-                        <Text style={styles.avatarText}>AD</Text>
+                        {match.club?.logo ? (
+                            <Image source={{ uri: match.club.logo }} style={{ width: '100%', height: '100%', borderRadius: 24 }} />
+                        ) : (
+                            <Text style={styles.avatarText}>{(match.club?.name || match.creator?.name || 'U').substring(0, 2).toUpperCase()}</Text>
+                        )}
                     </View>
                     <View style={styles.organizerInfo}>
                         <Text style={styles.organizerLabel}>Organizer</Text>
-                        <Text style={styles.organizerName}>Admin User</Text>
+                        <Text style={styles.organizerName}>{match.club?.name || match.creator?.name || 'Unknown Club'}</Text>
+                        <Text style={{ fontSize: 12, color: '#9E9E9E' }}>Admin: {match.creator?.name}</Text>
                     </View>
                     <View style={styles.hostTag}>
                         <Text style={styles.hostTagText}>Host</Text>
@@ -160,12 +202,24 @@ export default function MatchDetailScreen() {
                 {/* Buttons */}
                 <View style={styles.footerButtons}>
                     <TouchableOpacity style={styles.joinButton} onPress={() => router.push(`/match/${id}/reserve`)}>
-                        <Text style={styles.joinButtonText}>Join Group</Text>
+                        <Text style={styles.joinButtonText}>Ikut Tanding</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity style={styles.listButton} onPress={() => router.push(`/match/${id}/participants`)}>
                         <Text style={styles.listButtonText}>Lihat List Peserta</Text>
                     </TouchableOpacity>
+
+                    {currentUser && match.creator?.id === currentUser.id && (
+                        <>
+                            <TouchableOpacity style={[styles.listButton, { marginTop: 12, borderColor: '#1976D2' }]} onPress={() => router.push(`/match/${id}/teams`)}>
+                                <Text style={[styles.listButtonText, { color: '#1976D2' }]}>Manage Teams (Host)</Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity style={[styles.listButton, { marginTop: 12, borderColor: '#F57C00' }]} onPress={() => router.push(`/match/${id}/edit`)}>
+                                <Text style={[styles.listButtonText, { color: '#F57C00' }]}>Edit Match (Host)</Text>
+                            </TouchableOpacity>
+                        </>
+                    )}
                 </View>
 
             </ScrollView>

@@ -5,7 +5,7 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useState, useCallback } from 'react';
-import { api, Match } from '@/services/api';
+import { api, Match, Club } from '@/services/api';
 
 // Exact colors from image analysis
 const PRIMARY_GREEN = '#3E8E41';
@@ -17,15 +17,23 @@ export default function HomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
-  const [groups, setGroups] = useState<Match[]>([]);
+  const [matches, setMatches] = useState<Match[]>([]); // "Info Hari Ini" matches
+  const [myClubs, setMyClubs] = useState<Club[]>([]);  // "Club Saya"
+  const [currentUser, setCurrentUser] = useState<any>(null);
   const [refreshing, setRefreshing] = useState(false);
 
-  const fetchGroups = async () => {
+  const fetchData = async () => {
     try {
-      const data = await api.getMatches();
-      // Sort by date desc or asc? usually Newest created or Upcoming?
-      // Let's sort created desc for now to see new ones
-      setGroups(data.reverse());
+      // Parallel fetch
+      const [matchesData, clubsData, profileData] = await Promise.all([
+        api.getMatches(1, 10), // Latest matches for "Info Hari Ini"
+        api.getClubs(1, 5, '', 'joined'), // My Joined Clubs
+        api.getProfile().catch(() => null)
+      ]);
+
+      if (profileData) setCurrentUser(profileData);
+      setMatches(matchesData.reverse());
+      setMyClubs(clubsData);
     } catch (e) {
       console.error(e);
     }
@@ -33,24 +41,17 @@ export default function HomeScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      fetchGroups();
+      fetchData();
     }, [])
   );
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await fetchGroups();
+    await fetchData();
     setRefreshing(false);
   };
 
-  const formatCurrency = (amount: number) => {
-    return `Rp ${amount.toLocaleString('id-ID')}`;
-  };
-
-  const formatDate = (isoString: string) => {
-    const date = new Date(isoString);
-    return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
-  };
+  // ... (keep format helpers)
 
   return (
     <View style={styles.container}>
@@ -61,7 +62,7 @@ export default function HomeScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={PRIMARY_GREEN} />}
       >
 
-        {/* Header Section */}
+        {/* Header Section (Keep as is) */}
         <View style={[styles.header, { paddingTop: insets.top + 20 }]}>
           <View style={styles.headerContent}>
             <Text style={styles.greeting}>Halo, Robby 👋</Text>
@@ -72,19 +73,14 @@ export default function HomeScreen() {
         {/* Action Card - Floating */}
         <View style={styles.actionCardContainer}>
           <View style={styles.actionCard}>
-            <TouchableOpacity style={styles.primaryBtn} onPress={() => router.push('/create-group')}>
-              <Ionicons name="add" size={24} color="white" style={{ marginRight: 8 }} />
-              <Text style={styles.primaryBtnText}>Buat Group Main</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.secondaryBtn} onPress={() => router.push('/group')}>
-              <Ionicons name="people-outline" size={20} color="#333" style={{ marginRight: 8 }} />
-              <Text style={styles.secondaryBtnText}>Lihat Group Aktif</Text>
+            <TouchableOpacity style={styles.primaryBtn} onPress={() => router.push('/my-clubs')}>
+              <Ionicons name="albums-outline" size={24} color="white" style={{ marginRight: 8 }} />
+              <Text style={styles.primaryBtnText}>My Club</Text>
             </TouchableOpacity>
           </View>
         </View>
 
-        {/* Info Hari Ini */}
+        {/* Info Hari Ini (Stats) */}
         <View style={styles.sectionContainer}>
           <Text style={styles.sectionTitle}>Info Hari Ini</Text>
           <View style={styles.statsRow}>
@@ -92,80 +88,50 @@ export default function HomeScreen() {
               <View style={[styles.iconCircle, { backgroundColor: '#E8F5E9' }]}>
                 <Ionicons name="calendar-outline" size={24} color={PRIMARY_GREEN} />
               </View>
-              <Text style={styles.statLabel}>Match Hari Ini</Text>
-              <Text style={[styles.statValue, { color: PRIMARY_GREEN }]}>{groups.length}</Text>
+              <Text style={styles.statLabel}>Match Tersedia</Text>
+              <Text style={[styles.statValue, { color: PRIMARY_GREEN }]}>{matches.length}</Text>
             </View>
 
             <View style={styles.statCard}>
               <View style={[styles.iconCircle, { backgroundColor: '#FFEBEE' }]}>
                 <Ionicons name="location-outline" size={24} color="#D32F2F" />
               </View>
-              <Text style={styles.statLabel}>Slot Tersedia</Text>
-              <Text style={[styles.statValue, { color: '#D32F2F' }]}>12</Text>
+              <Text style={styles.statLabel}>Club diikuti</Text>
+              <Text style={[styles.statValue, { color: '#D32F2F' }]}>{myClubs.length}</Text>
             </View>
           </View>
         </View>
 
-        {/* Group Terbaru */}
-        <View style={styles.sectionContainer}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Group Terbaru</Text>
-            <TouchableOpacity onPress={() => router.push('/list')}>
-              <Text style={styles.seeAllText}>Lihat Semua</Text>
-            </TouchableOpacity>
-          </View>
-
-          {groups.map((group) => {
-            const currentPlayers = group.Bookings ? group.Bookings.length : 0;
-            const isFull = currentPlayers >= group.MaxPlayers;
-            const isAlmostFull = !isFull && currentPlayers >= group.MaxPlayers - 2;
-            const statusLabel = isFull ? 'Full' : (isAlmostFull ? 'Hampir Penuh' : 'Open Slot');
-
-            return (
-              <TouchableOpacity key={group.ID} style={styles.groupCard} onPress={() => router.push(`/match/${group.ID}`)}>
+        {/* Club Saya Section */}
+        {myClubs.length > 0 ? (
+          <View style={styles.sectionContainer}>
+            <Text style={styles.sectionTitle}>Club Saya</Text>
+            {myClubs.map((club) => (
+              <TouchableOpacity key={club.id} style={[styles.groupCard, { borderColor: PRIMARY_GREEN, borderWidth: 1.5 }]} onPress={() => router.push(`/club/${club.id}`)}>
                 <View style={styles.groupHeader}>
-                  <Text style={styles.groupTitle}>{group.Title}</Text>
-                  {statusLabel === 'Open Slot' && (
-                    <View style={[styles.tag, { backgroundColor: '#E8F5E9' }]}>
-                      <Text style={[styles.tagText, { color: PRIMARY_GREEN }]}>Open Slot</Text>
-                    </View>
-                  )}
-                  {statusLabel === 'Hampir Penuh' && (
-                    <View style={[styles.tag, { backgroundColor: '#FFF9C4' }]}>
-                      <Text style={[styles.tagText, { color: '#FBC02D' }]}>Slot hampir penuh 🔥</Text>
-                    </View>
-                  )}
-                  {statusLabel === 'Full' && (
-                    <View style={[styles.tag, { backgroundColor: '#FFEBEE' }]}>
-                      <Text style={[styles.tagText, { color: '#D32F2F' }]}>Full Booked</Text>
-                    </View>
-                  )}
-                </View>
-
-                <View style={styles.groupInfoRow}>
-                  <Ionicons name="calendar-outline" size={16} color="#757575" style={{ marginRight: 6 }} />
-                  <Text style={styles.groupInfoText}>{formatDate(group.Date)}</Text>
-                  <View style={{ width: 16 }} />
-                  <Ionicons name="location-outline" size={16} color="#757575" style={{ marginRight: 6 }} />
-                  <Text style={styles.groupInfoText}>{group.Location}</Text>
-                </View>
-
-                <View style={styles.groupFooter}>
-                  <View style={styles.playerCountContainer}>
-                    <Ionicons name="people-outline" size={18} color="#757575" style={{ marginRight: 6 }} />
-                    <Text style={styles.playerCountText}>
-                      <Text style={{ color: PRIMARY_GREEN, fontWeight: '700' }}>{currentPlayers}</Text>
-                      <Text style={{ color: '#757575' }}> / {group.MaxPlayers} Pemain</Text>
-                    </Text>
+                  <Text style={styles.groupTitle}>{club.name}</Text>
+                  <View style={[styles.tag, { backgroundColor: PRIMARY_GREEN }]}>
+                    <Text style={[styles.tagText, { color: '#fff' }]}>Member</Text>
                   </View>
-
-                  <Text style={styles.priceText}>{formatCurrency(group.Price)} / orang</Text>
+                </View>
+                <View style={styles.groupInfoRow}>
+                  <Text style={styles.groupInfoText} numberOfLines={2}>{club.description || "No description"}</Text>
                 </View>
               </TouchableOpacity>
-            );
-          })}
-        </View>
+            ))}
+          </View>
+        ) : (
+          <View style={styles.sectionContainer}>
+            <Text style={styles.sectionTitle}>Club Saya</Text>
+            <View style={{ padding: 20, alignItems: 'center', backgroundColor: '#fff', borderRadius: 16 }}>
+              <Text style={{ color: '#888' }}>Belum mengikuti club apapun.</Text>
+            </View>
+          </View>
+        )}
 
+
+
+        {/* End of content */}
       </ScrollView>
     </View>
   );

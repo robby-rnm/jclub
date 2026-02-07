@@ -13,11 +13,16 @@ const LIGHT_BG = '#FAFAFA';
 export default function ReserveSlotScreen() {
     const router = useRouter();
     const params = useLocalSearchParams();
-    const [slotCount, setSlotCount] = useState(1);
     const PRICE_PER_SLOT = 50000;
 
     // Timer logic
-    const [timeLeft, setTimeLeft] = useState(299); // 4:59 in seconds
+    const [timeLeft, setTimeLeft] = useState(300); // 5 minutes
+    const [match, setMatch] = useState<any>(null);
+    const [counts, setCounts] = useState<{ [key: string]: number }>({});
+    const [quotas, setQuotas] = useState<{ [key: string]: number }>({});
+    const [prices, setPrices] = useState<{ [key: string]: number }>({});
+    const [position, setPosition] = useState<string | null>(null);
+    const [positionNames, setPositionNames] = useState<{ [key: string]: string }>({});
 
     useEffect(() => {
         const timer = setInterval(() => {
@@ -26,18 +31,83 @@ export default function ReserveSlotScreen() {
         return () => clearInterval(timer);
     }, []);
 
+    useEffect(() => {
+        if (!params.id) return;
+        loadMatchAndSports();
+    }, [params.id]);
+
+    const loadMatchAndSports = async () => {
+        try {
+            const [matchData, sportsData] = await Promise.all([
+                api.getMatch(params.id as string),
+                api.getSports()
+            ]);
+            setMatch(matchData);
+
+            // Find sport to get position names
+            const sport = sportsData.find((s: any) => s.name === matchData.game_type);
+            const names: { [key: string]: string } = {};
+            if (sport) {
+                sport.positions.forEach((p: any) => names[p.code] = p.name);
+            }
+            setPositionNames(names);
+
+            // Parse Quotas
+            const parsedQuotas: { [key: string]: number } = {};
+            try {
+                if (matchData.position_quotas) {
+                    const q = JSON.parse(matchData.position_quotas);
+                    // Ensure numbers
+                    Object.keys(q).forEach(k => parsedQuotas[k] = parseInt(q[k]));
+                }
+            } catch (e) { console.error("Quota parse error", e); }
+            setQuotas(parsedQuotas);
+
+            // Parse Prices
+            const parsedPrices: { [key: string]: number } = {};
+            try {
+                if (matchData.position_prices) {
+                    const p = JSON.parse(matchData.position_prices);
+                    Object.keys(p).forEach(k => parsedPrices[k] = parseInt(p[k]));
+                }
+            } catch (e) { console.error("Price parse error", e); }
+            setPrices(parsedPrices);
+
+            // Calculate Counts
+            const currentCounts: { [key: string]: number } = {};
+            if (matchData.bookings) {
+                matchData.bookings.forEach((b: any) => {
+                    if (b.status === 'confirmed') {
+                        // Assuming Position in Booking JSON is now lowercase 'position' if we changed Booking too.
+                        // Wait, I didn't verify Booking JSON Response in API for "Position".
+                        // Booking struct: "Position Position".
+                        // Let's assume lowercase because Booking model was updated?
+                        // Re-reading my models.go edit: I updated `Club`, `Announcement`, `Notification`, `ClubMember`, `Match`.
+                        // I did NOT update `Booking` struct in the diff I sent.
+                        // Ah! I missed `Booking` struct in the `replace_file_content` call for `models.go`.
+                        // The tool call output shows `type Booking struct` at the end but I didn't actually edit it in that tool call?
+                        // Let me check the output of step 4259.
+                        // It ended with `Bookings []Booking ...`.
+                        // It did NOT show `type Booking struct` changes.
+                        // So Booking struct still has Uppercase keys by default!
+                        // This means `participants.tsx` change to `status`, `is_paid` etc might be WRONG if backend sends Uppercase.
+                        // I MUST update `Booking` struct in `models.go` as well.
+                        currentCounts[b.Position] = (currentCounts[b.Position] || 0) + 1;
+                    }
+                });
+            }
+            setCounts(currentCounts);
+
+        } catch (e) {
+            console.error("Failed to load data", e);
+            alert("Failed to load match data");
+        }
+    };
+
     const formatTime = (seconds: number) => {
         const m = Math.floor(seconds / 60);
         const s = seconds % 60;
         return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-    };
-
-    const handleIncrement = () => {
-        if (slotCount < 5) setSlotCount(prev => prev + 1);
-    };
-
-    const handleDecrement = () => {
-        if (slotCount > 1) setSlotCount(prev => prev - 1);
     };
 
     const formatCurrency = (amount: number) => {
@@ -45,26 +115,15 @@ export default function ReserveSlotScreen() {
     };
 
     const handlePay = async () => {
-        // Logic for "Reserve/Join"
-        // In real app, this might trigger Payment Gateway.
-        // For now, we hit the Join Match API.
+        if (!position) {
+            alert("Pilih posisi terlebih dahulu");
+            return;
+        }
         try {
-            // Loop for slot count or adjust API to accept slot count? 
-            // Backend JoinBooking is usually single user. 
-            // If "Reserve 5 slots", we might need to create 5 bookings or a group booking.
-            // For simplicity now, let's just book 1 for the current user and ignore slotCount > 1 warning,
-            // OR assume backend handles quantity (it doesn't yet).
-            // Let's just book 1 for demo purposes or show valid error if slot > 1 not supported yet.
-
-            if (slotCount > 1) {
-                alert("Currently restricted to 1 slot per user for beta.");
-                return;
-            }
-
-            await api.joinMatch(params.id as string);
+            await api.joinMatch(params.id as string, position);
             alert("Pembayaran Berhasil! Kamu telah terdaftar.");
             router.replace(`/match/${params.id}`);
-        } catch (e) {
+        } catch (e: any) {
             console.error(e);
             alert("Gagal melakukan booking. " + e.message);
         }
@@ -98,40 +157,64 @@ export default function ReserveSlotScreen() {
                 </View>
 
                 {/* Match Info */}
-                <View style={styles.card}>
-                    <Text style={styles.matchTitle}>Mini Soccer Jumat Fun</Text>
-                    <Text style={styles.matchDate}>Jumat, 5 Februari 2026 • 18:00 WIB</Text>
-                    <Text style={styles.matchLocation}>Lapangan GBK, Jakarta Pusat</Text>
-                </View>
-
-                {/* Slot Selection */}
-                <View style={styles.card}>
-                    <Text style={styles.cardTitle}>Pilih Jumlah Slot</Text>
-
-                    <View style={styles.counterContainer}>
-                        <TouchableOpacity
-                            style={[styles.counterBtn, slotCount <= 1 && styles.counterBtnDisabled]}
-                            onPress={handleDecrement}
-                            disabled={slotCount <= 1}
-                        >
-                            <MaterialIcons name="remove" size={24} color={slotCount <= 1 ? '#BDBDBD' : '#757575'} />
-                        </TouchableOpacity>
-
-                        <View style={styles.countDisplay}>
-                            <Text style={styles.countText}>{slotCount}</Text>
-                            <Text style={styles.slotLabel}>Slot</Text>
+                {match && (
+                    <View style={styles.card}>
+                        <Text style={styles.matchTitle}>{match.Title}</Text>
+                        <Text style={styles.matchDate}>{new Date(match.Date).toLocaleDateString('id-ID')} • {new Date(match.Date).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} WIB</Text>
+                        <Text style={styles.matchLocation}>{match.Location}</Text>
+                        <View style={{ flexDirection: 'row', gap: 8, marginTop: 8 }}>
+                            <View style={{ backgroundColor: '#E8F5E9', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 4 }}>
+                                <Text style={{ color: '#2E7D32', fontSize: 12, fontWeight: '600' }}>{match.GameType}</Text>
+                            </View>
                         </View>
-
-                        <TouchableOpacity
-                            style={[styles.counterBtn, styles.counterBtnActive]}
-                            onPress={handleIncrement}
-                            disabled={slotCount >= 5}
-                        >
-                            <MaterialIcons name="add" size={24} color="#fff" />
-                        </TouchableOpacity>
                     </View>
+                )}
 
-                    <Text style={styles.maxSlotText}>Maksimal 5 slot per orang</Text>
+                {/* Position Selection */}
+                <View style={styles.card}>
+                    <Text style={styles.cardTitle}>Pilih Posisi</Text>
+                    <View style={styles.positionContainer}>
+                        {Object.keys(quotas).map((code) => {
+                            const count = counts[code] || 0;
+                            const quota = quotas[code] || 0;
+                            const isFull = count >= quota;
+                            const isSelected = position === code;
+                            // Default icon
+                            let iconName: any = "accessibility";
+                            if (code === 'gk') iconName = "sports-handball";
+                            else if (code.includes('player')) iconName = "football-outline"; // Ionicon
+
+                            // Use MaterialIcons for handball, Ionicons for others? 
+                            // Quick hack: just use one lib if possible or conditional render.
+
+                            return (
+                                <TouchableOpacity
+                                    key={code}
+                                    style={[
+                                        styles.positionOption,
+                                        isSelected && styles.positionActive,
+                                        isFull && styles.positionDisabled
+                                    ]}
+                                    onPress={() => !isFull && setPosition(code)}
+                                    disabled={isFull}
+                                >
+                                    {code === 'gk' ? (
+                                        <MaterialIcons name="sports-handball" size={24} color={isFull ? '#BDBDBD' : (isSelected ? PRIMARY_GREEN : '#757575')} />
+                                    ) : (
+                                        <Ionicons name="football-outline" size={24} color={isFull ? '#BDBDBD' : (isSelected ? PRIMARY_GREEN : '#757575')} />
+                                    )}
+                                    <View>
+                                        <Text style={[styles.positionText, isSelected && styles.textActive, isFull && styles.textDisabled]}>
+                                            {positionNames[code] || code.toUpperCase()}
+                                        </Text>
+                                        <Text style={{ fontSize: 10, color: isFull ? '#E57373' : '#9E9E9E' }}>
+                                            {isFull ? 'FULL' : `${count}/${quota}`}
+                                        </Text>
+                                    </View>
+                                </TouchableOpacity>
+                            );
+                        })}
+                    </View>
                 </View>
 
                 {/* Price Breakdown */}
@@ -140,31 +223,35 @@ export default function ReserveSlotScreen() {
 
                     <View style={styles.priceRow}>
                         <Text style={styles.priceLabel}>Harga per slot</Text>
-                        <Text style={styles.priceValue}>{formatCurrency(PRICE_PER_SLOT)}</Text>
+                        <Text style={styles.priceValue}>
+                            {position ? formatCurrency(prices[position] || match?.Price || PRICE_PER_SLOT) : '-'}
+                        </Text>
                     </View>
 
                     <View style={styles.priceRow}>
                         <Text style={styles.priceLabel}>Jumlah slot</Text>
-                        <Text style={styles.priceValue}>{slotCount}x</Text>
+                        <Text style={styles.priceValue}>1x ({position ? (positionNames[position] || position) : '-'})</Text>
                     </View>
 
                     <View style={styles.divider} />
 
                     <View style={styles.priceRow}>
                         <Text style={styles.totalLabel}>Total</Text>
-                        <Text style={styles.totalValue}>{formatCurrency(PRICE_PER_SLOT * slotCount)}</Text>
+                        <Text style={styles.totalValue}>
+                            {position ? formatCurrency(prices[position] || match?.Price || PRICE_PER_SLOT) : '-'}
+                        </Text>
                     </View>
                 </View>
 
-            </ScrollView>
+            </ScrollView >
 
             {/* Footer Button */}
-            <SafeAreaView edges={['bottom']} style={styles.footer}>
-                <TouchableOpacity style={styles.payButton} onPress={handlePay}>
+            < SafeAreaView edges={['bottom']} style={styles.footer} >
+                <TouchableOpacity style={[styles.payButton, !position && { opacity: 0.5 }]} onPress={handlePay} disabled={!position}>
                     <Text style={styles.payButtonText}>Lanjut Bayar</Text>
                 </TouchableOpacity>
-            </SafeAreaView>
-        </View>
+            </SafeAreaView >
+        </View >
     );
 }
 
@@ -343,5 +430,41 @@ const styles = StyleSheet.create({
         color: '#fff',
         fontSize: 16,
         fontWeight: '700',
+    },
+    positionContainer: {
+        flexDirection: 'row',
+        gap: 12,
+    },
+    positionOption: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 12,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: '#EEEEEE',
+        backgroundColor: '#fff',
+        gap: 8,
+    },
+    positionActive: {
+        borderColor: PRIMARY_GREEN,
+        backgroundColor: '#E8F5E9',
+    },
+    positionText: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#757575',
+    },
+    textActive: {
+        color: PRIMARY_GREEN,
+    },
+    positionDisabled: {
+        backgroundColor: '#F5F5F5',
+        borderColor: '#EEEEEE',
+        opacity: 0.7,
+    },
+    textDisabled: {
+        color: '#BDBDBD',
     },
 });

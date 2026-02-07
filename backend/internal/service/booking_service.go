@@ -1,7 +1,9 @@
 package service
 
 import (
+	"encoding/json"
 	"errors"
+	"fmt"
 	"reserve_game/internal/models"
 	"reserve_game/internal/repository"
 	"time"
@@ -19,20 +21,26 @@ func (s *BookingService) JoinMatch(userID string, matchID string, position model
 	var booking *models.Booking
 
 	err := s.Repo.RunTransaction(func(repo repository.Repository) error {
-		// 1. Get existing bookings
+		// 1. Get Match for Quotas (WITH LOCK)
+		match, err := repo.GetMatchByIDLock(matchID)
+		if err != nil {
+			return err
+		}
+
+		// 2. Get existing bookings
 		bookings, err := repo.GetBookingsByMatchID(matchID)
 		if err != nil {
 			return err
 		}
 
-		// 2. Check if user already booked
+		// 3. Check if user already booked
 		for _, b := range bookings {
 			if b.UserID == userID && b.Status != models.StatusCancelled {
 				return errors.New("user already booked for this match")
 			}
 		}
 
-		// 3. Calculate status based on quota
+		// 4. Calculate status based on quota
 		confirmedCount := 0
 		maxWaitlistOrder := 0
 		for _, b := range bookings {
@@ -47,16 +55,45 @@ func (s *BookingService) JoinMatch(userID string, matchID string, position model
 			}
 		}
 
+		// Parse Quota from Match
 		quota := 0
-		switch position {
-		case models.PositionGK:
-			quota = 3
-		case models.PositionPlayerFront:
-			quota = 14
-		case models.PositionPlayerBack:
-			quota = 13
-		default:
-			return errors.New("invalid position")
+		// Default quotas if empty
+		if match.PositionQuotas == "" {
+			switch position {
+			case models.PositionGK:
+				quota = 2 // Default
+			default:
+				quota = 15 // Default
+			}
+		} else {
+			var quotas map[string]int
+			if err := json.Unmarshal([]byte(match.PositionQuotas), &quotas); err != nil {
+				// Fallback if bad JSON
+				quota = 15
+			} else {
+				if q, ok := quotas[string(position)]; ok {
+					quota = q
+				} else {
+					quota = 0 // Position not allowed? or unlimited? Let's say 0 means blocked/waitlist only if strict.
+					// Or maybe generic player default.
+					// Let's assume if not implicit, it's 0 (full/waitlist).
+					// But for backward compatibility with existing "player_front", "player_back",
+					// we should handle safely.
+					if position == "player" || position == "player_front" || position == "player_back" {
+						// Check if there is a generic "player" quota
+						if qDetails, ok := quotas["player"]; ok {
+							quota = qDetails
+						} else {
+							// Try "player_front" specifically
+							if qPF, okPF := quotas["player_front"]; okPF {
+								quota = qPF
+							} else {
+								quota = 100 // Fallback open
+							}
+						}
+					}
+				}
+			}
 		}
 
 		status := models.StatusConfirmed
@@ -95,6 +132,7 @@ func (s *BookingService) CancelBooking(bookingID string, userID string, isAdmin 
 		}
 
 		if booking.UserID != userID && !isAdmin {
+			fmt.Printf("[CancelBooking] Denied. BookingUserID=%s, RequestUserID=%s, IsAdmin=%v\n", booking.UserID, userID, isAdmin)
 			return errors.New("unauthorized to cancel this booking")
 		}
 

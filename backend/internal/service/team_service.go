@@ -109,3 +109,42 @@ func (s *TeamService) GenerateTeams(matchID string) ([]models.Team, error) {
 
 	return teams, err
 }
+
+func (s *TeamService) UpdateTeamMember(memberID string, newTeamID string) error {
+	return s.Repo.UpdateTeamMember(memberID, newTeamID)
+}
+
+func (s *TeamService) UpdateTeamMemberSecure(memberID string, newTeamID string, requestingUserID string) error {
+	// 1. Get Member
+	member, err := s.Repo.GetTeamMemberByID(memberID)
+	if err != nil {
+		return errors.New("member not found")
+	}
+
+	// 2. Get Old Team to find MatchID
+	oldTeam, err := s.Repo.GetTeamByID(member.TeamID)
+	if err != nil {
+		return errors.New("team not found")
+	}
+
+	// 3. Get Match to check Creator
+	match, err := s.Repo.GetMatchByID(oldTeam.MatchID)
+	if err != nil {
+		return errors.New("match not found")
+	}
+
+	if match.CreatorID != requestingUserID {
+		return errors.New("unauthorized: only match creator can manage teams")
+	}
+
+	// 4. Verify New Team belongs to same match (security sanity check)
+	newTeam, err := s.Repo.GetTeamByID(newTeamID)
+	if err != nil {
+		return errors.New("target team not found")
+	}
+	if newTeam.MatchID != match.ID {
+		return errors.New("target team belongs to a different match")
+	}
+
+	return s.Repo.UpdateTeamMember(memberID, newTeamID)
+}

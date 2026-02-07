@@ -1,11 +1,17 @@
-import { useState } from 'react';
-import { View, StyleSheet, TouchableOpacity, ActivityIndicator, Image, Platform } from 'react-native';
+import { useState, useEffect } from 'react';
+import { View, StyleSheet, TouchableOpacity, ActivityIndicator, Image, Platform, TextInput, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSession } from '../ctx';
 import { ThemedText as Text } from '@/components/themed-text';
 import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import * as WebBrowser from 'expo-web-browser';
+import * as Google from 'expo-auth-session/providers/google';
+import * as Facebook from 'expo-auth-session/providers/facebook';
+import { ResponseType } from 'expo-auth-session';
+
+WebBrowser.maybeCompleteAuthSession();
 
 const PRIMARY_GREEN = '#3E8E41';
 const GOOGLE_COLOR = '#DB4437';
@@ -14,20 +20,84 @@ const FACEBOOK_COLOR = '#1877F2';
 export default function Login() {
     const { signIn } = useSession();
     const router = useRouter();
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
 
-    const handleLogin = async (provider: string) => {
+    // Google Auth Request (using environment variables)
+    const [googleRequest, googleResponse, googlePromptAsync] = Google.useAuthRequest({
+        clientId: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID_WEB,
+        iosClientId: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID_IOS,
+        androidClientId: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID_ANDROID,
+    });
+
+    // Facebook Auth Request (using environment variables)
+    const [fbRequest, fbResponse, fbPromptAsync] = Facebook.useAuthRequest({
+        clientId: process.env.EXPO_PUBLIC_FACEBOOK_APP_ID,
+    });
+
+    useEffect(() => {
+        if (googleResponse?.type === 'success') {
+            const { authentication } = googleResponse;
+            handleSocialLoginSuccess('google', authentication?.accessToken);
+        }
+    }, [googleResponse]);
+
+    useEffect(() => {
+        if (fbResponse?.type === 'success') {
+            const { authentication } = fbResponse;
+            handleSocialLoginSuccess('facebook', authentication?.accessToken);
+        }
+    }, [fbResponse]);
+
+    const handleSocialLoginSuccess = async (provider: string, token: string | undefined) => {
+        if (!token) return;
+
         setLoading(true);
         try {
-            // Simulate backend delay
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            await signIn(provider);
+            // Send to backend for verification and JWT issuance
+            // Note: In dev mode, our backend currently trusts the email/name.
+            // We should fetch basic info from Google/FB if needed, or send the token.
+            await signIn(provider, '', token); // Updated signIn to handle social
             router.replace('/');
-        } catch (e) {
-            console.error(e);
-            alert('Login failed');
+        } catch (e: any) {
+            Alert.alert('Social Login Failed', e.message);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleEmailLogin = async () => {
+        if (!email || !password) {
+            Alert.alert('Error', 'Please enter Email and Password');
+            return;
+        }
+
+        setLoading(true);
+        try {
+            await signIn('local', email, undefined, password);
+            router.replace('/');
+        } catch (e: any) {
+            console.error(e);
+            Alert.alert('Login Failed', e.message || 'Invalid credentials');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleSocialLogin = async (provider: string) => {
+        if (provider === 'google') {
+            if (!process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID_WEB) {
+                Alert.alert("Configuration Required", "Google Client IDs are missing in .env file.");
+                return;
+            }
+            googlePromptAsync();
+        } else if (provider === 'facebook') {
+            if (!process.env.EXPO_PUBLIC_FACEBOOK_APP_ID) {
+                Alert.alert("Configuration Required", "Facebook App ID is missing in .env file.");
+                return;
+            }
+            fbPromptAsync();
         }
     };
 
@@ -40,19 +110,56 @@ export default function Login() {
 
                     {/* Header / Logo Area */}
                     <View style={styles.headerSection}>
-                        <View style={styles.logoCircle}>
-                            <Ionicons name="football-outline" size={60} color={PRIMARY_GREEN} />
-                        </View>
-                        <Text style={styles.title}>Reserve Game</Text>
+                        <Image
+                            source={require('@/assets/images/jclub-logo.png')}
+                            style={styles.logoImage}
+                            resizeMode="contain"
+                        />
+                        <Text style={styles.title}>JClub</Text>
                         <Text style={styles.subtitle}>Temukan dan gabung permainan seru di sekitarmu!</Text>
+                    </View>
+
+                    {/* Email/Password Login */}
+                    <View style={styles.inputContainer}>
+                        <Text style={styles.inputLabel}>Email</Text>
+                        <TextInput
+                            style={styles.input}
+                            placeholder="email@example.com"
+                            value={email}
+                            onChangeText={setEmail}
+                            autoCapitalize="none"
+                            keyboardType="email-address"
+                        />
+                        <Text style={styles.inputLabel}>Password</Text>
+                        <TextInput
+                            style={styles.input}
+                            placeholder="******"
+                            value={password}
+                            onChangeText={setPassword}
+                            secureTextEntry
+                        />
+
+                        <TouchableOpacity
+                            style={styles.loginButton}
+                            onPress={handleEmailLogin}
+                            disabled={loading}
+                        >
+                            <Text style={styles.loginBtnText}>Masuk</Text>
+                        </TouchableOpacity>
+                    </View>
+
+                    <View style={styles.dividerContainer}>
+                        <View style={styles.divider} />
+                        <Text style={styles.dividerText}>ATAU</Text>
+                        <View style={styles.divider} />
                     </View>
 
                     {/* Social Login Buttons */}
                     <View style={styles.buttonContainer}>
                         <TouchableOpacity
                             style={[styles.socialButton, styles.googleBtn]}
-                            onPress={() => handleLogin('google')}
-                            disabled={loading}
+                            onPress={() => handleSocialLogin('google')}
+                            disabled={loading || !googleRequest}
                         >
                             <View style={styles.iconWrapper}>
                                 <FontAwesome5 name="google" size={20} color="#fff" />
@@ -62,7 +169,7 @@ export default function Login() {
 
                         <TouchableOpacity
                             style={[styles.socialButton, styles.fbBtn]}
-                            onPress={() => handleLogin('facebook')}
+                            onPress={() => handleSocialLogin('facebook')}
                             disabled={loading}
                         >
                             <View style={styles.iconWrapper}>
@@ -71,9 +178,9 @@ export default function Login() {
                             <Text style={styles.socialBtnText}>Masuk dengan Facebook</Text>
                         </TouchableOpacity>
 
-                        <Text style={styles.termsText}>
-                            Dengan masuk, kamu menyetujui <Text style={styles.linkText}>Syarat & Ketentuan</Text> kami.
-                        </Text>
+                        <TouchableOpacity onPress={() => router.push('/register')} style={styles.signUpContainer}>
+                            <Text style={styles.footerText}>Belum punya akun? <Text style={styles.linkText}>Daftar</Text></Text>
+                        </TouchableOpacity>
                     </View>
 
                     {loading && (
@@ -105,48 +212,97 @@ const styles = StyleSheet.create({
     },
     headerSection: {
         alignItems: 'center',
-        marginBottom: 60,
+        marginBottom: 40,
     },
-    logoCircle: {
-        width: 120,
-        height: 120,
-        borderRadius: 60,
-        backgroundColor: '#E8F5E9', // Light Green
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginBottom: 24,
-        borderWidth: 1,
-        borderColor: '#C8E6C9',
+    logoImage: {
+        width: 150,
+        height: 150,
+        marginBottom: 16,
     },
     title: {
-        fontSize: 28,
+        fontSize: 24,
         fontWeight: '700',
         color: '#1C1C1E',
-        marginBottom: 12,
+        marginBottom: 8,
         textAlign: 'center',
     },
     subtitle: {
-        fontSize: 16,
+        fontSize: 14,
         color: '#757575',
         textAlign: 'center',
         paddingHorizontal: 20,
-        lineHeight: 24,
+        lineHeight: 20,
     },
     buttonContainer: {
         width: '100%',
-        gap: 16,
+        gap: 12,
+    },
+    inputContainer: {
+        width: '100%',
+        marginBottom: 20,
+    },
+    inputLabel: {
+        fontSize: 14,
+        color: '#757575',
+        marginBottom: 8,
+        fontWeight: '500',
+    },
+    input: {
+        backgroundColor: '#fff',
+        borderWidth: 1,
+        borderColor: '#E0E0E0',
+        borderRadius: 12,
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+        marginBottom: 16,
+        fontSize: 16,
+        color: '#1C1C1E',
+    },
+    loginButton: {
+        backgroundColor: PRIMARY_GREEN,
+        borderRadius: 12,
+        paddingVertical: 14,
+        alignItems: 'center',
+        marginTop: 8,
+        shadowColor: PRIMARY_GREEN,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.2,
+        shadowRadius: 8,
+        elevation: 4,
+    },
+    loginBtnText: {
+        color: '#fff',
+        fontSize: 16,
+        fontWeight: '600',
+    },
+    dividerContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 24,
+        width: '100%',
+    },
+    divider: {
+        flex: 1,
+        height: 1,
+        backgroundColor: '#E0E0E0',
+    },
+    dividerText: {
+        marginHorizontal: 10,
+        color: '#9E9E9E',
+        fontSize: 12,
+        fontWeight: '600',
     },
     socialButton: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingVertical: 16,
+        paddingVertical: 14,
         paddingHorizontal: 24,
         borderRadius: 16,
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.1,
-        shadowRadius: 8,
-        elevation: 4,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 4,
+        elevation: 2,
         justifyContent: 'center',
         position: 'relative',
     },
@@ -162,23 +318,17 @@ const styles = StyleSheet.create({
     },
     socialBtnText: {
         color: '#fff',
-        fontSize: 16,
+        fontSize: 14,
         fontWeight: '600',
         textAlign: 'center',
     },
-    toggleContainer: {
+    signUpContainer: {
         marginTop: 16,
         alignItems: 'center',
     },
-    toggleText: {
+    footerText: {
         fontSize: 14,
         color: '#757575',
-    },
-    termsText: {
-        marginTop: 24,
-        textAlign: 'center',
-        fontSize: 12,
-        color: '#9E9E9E',
     },
     linkText: {
         color: PRIMARY_GREEN,
