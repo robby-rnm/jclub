@@ -70,16 +70,16 @@ export default function ClubDetailScreen() {
             const isOwner = profileData && clubData && profileData.id === clubData.creator_id;
 
             // Determine effective status
-            // If user explicitly selected something, use it. 
-            // If not (initial load), set default based on role?
-            // But setSelectedStatus is state. We use selectedStatus.
-            // Note: IF we want Owner to see ALL by default, we should have initialized selectedStatus='all' conditionally?
-            // Hard to do in useState init. We can do it here if needed, but let's stick to 'published' default or what state says.
-            // Actually, for Owner we might want to default to 'all'. 
-            // Let's keep it simple: Default 'published' for everyone, Owner can toggle.
-
             const [matchesData, myClubs, announcementsData] = await Promise.all([
-                api.getMatches(1, 20, debouncedSearch, 'all', id as string, selectedSport, selectedStatus), // Pass sport and status
+                api.getMatches(
+                    1,
+                    10,
+                    debouncedSearch,
+                    'all',
+                    id as string,
+                    selectedSport === 'all' ? '' : selectedSport,
+                    selectedStatus === 'all' ? '' : selectedStatus
+                ),
                 api.getClubs(1, 100, '', 'joined'),
                 api.getClubAnnouncements(id as string)
             ]);

@@ -228,13 +228,13 @@ func (r *repository) FixData() error {
 	testUserID := "00000000-0000-0000-0000-000000000001"
 
 	// 1. Assign orphaned matches to test user
-	if err := r.db.Model(&models.Match{}).Where("creator_id IS NULL OR creator_id = ''").Update("creator_id", testUserID).Error; err != nil {
+	if err := r.db.Model(&models.Match{}).Where("creator_id IS NULL").Update("creator_id", testUserID).Error; err != nil {
 		return err
 	}
 	// 2. Assign orphaned bookings to test user (optional)
 	// 3. Assign orphaned matches to a default club (Temporary Fix for Dev)
 	defaultClubID := "a131fef9-cd3e-4c00-bc13-06f9fd6e1285"
-	if err := r.db.Model(&models.Match{}).Where("club_id = '' OR club_id IS NULL").Update("club_id", defaultClubID).Error; err != nil {
+	if err := r.db.Model(&models.Match{}).Where("club_id IS NULL").Update("club_id", defaultClubID).Error; err != nil {
 		return err
 	}
 	return nil

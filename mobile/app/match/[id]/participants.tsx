@@ -6,6 +6,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { useState, useEffect } from 'react';
 import { api, Match } from '@/services/api';
+import { format, parseISO } from 'date-fns';
+import { id as idID } from 'date-fns/locale';
 
 const PRIMARY_GREEN = '#3E8E41';
 const LIGHT_BG = '#FAFAFA';
@@ -74,10 +76,12 @@ export default function ParticipantListScreen() {
 
         bookings.forEach((b: any) => {
             // Map backend/API response to local Booking interface if needed
-            // Assuming API returns lowercase keys now
-            if (b.status === 'confirmed') {
+            // Handle both Lowercase (new) and PascalCase (old) from backend to be safe
+            const status = b.status || b.Status;
+
+            if (status === 'confirmed') {
                 conf.push(b);
-            } else if (b.status === 'waitlist') {
+            } else if (status === 'waitlist') {
                 wait.push(b);
             }
         });

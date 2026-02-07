@@ -6,6 +6,8 @@ import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { useState, useEffect } from 'react';
 import { api } from '@/services/api';
+import { format, parseISO } from 'date-fns';
+import { id as idID } from 'date-fns/locale';
 
 const PRIMARY_GREEN = '#3E8E41';
 const LIGHT_BG = '#FAFAFA';
@@ -160,7 +162,9 @@ export default function ReserveSlotScreen() {
                 {match && (
                     <View style={styles.card}>
                         <Text style={styles.matchTitle}>{match.Title}</Text>
-                        <Text style={styles.matchDate}>{new Date(match.Date).toLocaleDateString('id-ID')} • {new Date(match.Date).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} WIB</Text>
+                        <Text style={styles.matchDate}>
+                            {format(parseISO(match.Date), 'dd MMMM yyyy', { locale: idID })} • {format(parseISO(match.Date), 'HH:mm', { locale: idID })} WIB
+                        </Text>
                         <Text style={styles.matchLocation}>{match.Location}</Text>
                         <View style={{ flexDirection: 'row', gap: 8, marginTop: 8 }}>
                             <View style={{ backgroundColor: '#E8F5E9', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 4 }}>

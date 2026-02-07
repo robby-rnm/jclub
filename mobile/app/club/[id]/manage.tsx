@@ -32,14 +32,18 @@ export default function ManageClubScreen() {
             const data = await api.getClub(id as string);
             // API now returns { club: ..., member_count: ... }
             const club = data.club || data; // Handle both old/new structure if transition
+            console.log("Manage Club Data Loaded:", club);
 
-            setName(club.Name);
-            setDescription(club.Description);
-            setLogo(club.Logo);
+            setName(club.Name || club.name || '');
+            setDescription(club.Description || club.description || '');
+            setLogo(club.Logo || club.logo || '');
 
-            if (club.SocialMedia) {
-                const socials = JSON.parse(club.SocialMedia);
-                setInstagram(socials.instagram || '');
+            const socialMediaStr = club.SocialMedia || club.social_media;
+            if (socialMediaStr) {
+                try {
+                    const socials = JSON.parse(socialMediaStr);
+                    setInstagram(socials.instagram || '');
+                } catch (e) { console.error("Social parse error", e); }
             }
         } catch (e) {
             Alert.alert('Error', 'Gagal memuat data club');

@@ -97,8 +97,8 @@ export default function ProfileScreen() {
     }
 
     // Fallbacks
-    const avatarUri = user.Avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.Name)}&background=3E8E41&color=fff`;
-    const memberDate = user.CreatedAt ? new Date(user.CreatedAt).toLocaleDateString('id-ID', { month: 'long', year: 'numeric' }) : 'Unknown';
+    const avatarUri = user.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=3E8E41&color=fff`;
+    const memberDate = user.created_at ? new Date(user.created_at).toLocaleDateString('id-ID', { month: 'long', year: 'numeric' }) : 'Unknown';
 
     return (
         <View style={styles.container}>
@@ -110,8 +110,8 @@ export default function ProfileScreen() {
                     <View style={styles.avatarContainer}>
                         <Image source={{ uri: avatarUri }} style={styles.avatarImage} />
                     </View>
-                    <Text style={styles.userName}>{user.Name}</Text>
-                    <Text style={styles.userEmail}>{user.Email}</Text>
+                    <Text style={styles.userName}>{user.name}</Text>
+                    <Text style={styles.userEmail}>{user.email}</Text>
                     <View style={styles.memberTag}>
                         <Text style={styles.memberTagText}>Member sejak {memberDate}</Text>
                     </View>
