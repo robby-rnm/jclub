@@ -407,7 +407,7 @@ func (h *Handler) CreateMatch(c *gin.Context) {
 		Description:    req.Description,
 		GameType:       req.GameType,
 		CreatorID:      userID.(string),
-		ClubID:         req.ClubID, // Link to Club
+		ClubID:         &req.ClubID, // Link to Club
 		Date:           date,
 		Location:       req.Location,
 		Price:          float64(req.Price),

@@ -20,6 +20,7 @@ export default function MatchDetailScreen() {
     const [loading, setLoading] = useState(true);
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
     const [currentUser, setCurrentUser] = useState<any>(null);
+    const [teams, setTeams] = useState<any[]>([]);
 
     useEffect(() => {
         if (!id) return;
@@ -28,13 +29,15 @@ export default function MatchDetailScreen() {
             try {
                 console.log("[MatchDetail] Loading for ID:", id);
                 setErrorMsg(null);
-                const [matchData, userData] = await Promise.all([
+                const [matchData, userData, teamsData] = await Promise.all([
                     api.getMatch(id as string),
-                    api.getProfile()
+                    api.getProfile(),
+                    api.getTeams(id as string).catch(() => [])
                 ]);
                 console.log("[MatchDetail] Match Data:", matchData ? "Found" : "Null");
                 setMatch(matchData);
                 setCurrentUser(userData);
+                setTeams(teamsData);
             } catch (err: any) {
                 console.error("[MatchDetail] Error:", err);
                 setErrorMsg(err.message || "Unknown error");
@@ -74,6 +77,11 @@ export default function MatchDetailScreen() {
 
     const currentPlayers = match.bookings ? match.bookings.length : 0;
     const progress = currentPlayers / match.max_players;
+
+    const userIsJoined = match.bookings?.some((b: any) => b.user_id === currentUser?.id);
+
+    const myTeam = teams.find(t => t.members.some((m: any) => m.user.id === currentUser?.id));
+    const opponentTeams = teams.filter(t => t.id !== myTeam?.id);
 
     // Formatting helpers (can be moved to utils)
     const formatCurrency = (amount: number) => `Rp ${amount.toLocaleString('id-ID')}`;
@@ -180,6 +188,62 @@ export default function MatchDetailScreen() {
                     )}
                 </View>
 
+                {/* Team Info Section */}
+                {userIsJoined && teams.length > 0 && (
+                    <View>
+                        {myTeam ? (
+                            <>
+                                <Text style={styles.sectionTitle}>Tim Kamu</Text>
+                                <View style={[styles.teamCard, { borderColor: PRIMARY_GREEN, borderWidth: 1.5 }]}>
+                                    <View style={styles.teamHeader}>
+                                        <Text style={[styles.teamName, { color: PRIMARY_GREEN }]}>{myTeam.name}</Text>
+                                        <Ionicons name="shield-checkmark" size={20} color={PRIMARY_GREEN} />
+                                    </View>
+                                    {myTeam.members.map((member: any) => (
+                                        <View key={member.id} style={styles.playerRow}>
+                                            <View style={styles.playerAvatarSmall}>
+                                                <Text style={{ fontSize: 10, fontWeight: 'bold' }}>
+                                                    {member.user.name.substring(0, 2).toUpperCase()}
+                                                </Text>
+                                            </View>
+                                            <Text style={[styles.playerText, member.user.id === currentUser?.id && { fontWeight: '700', color: PRIMARY_GREEN }]}>
+                                                {member.user.name} {member.user.id === currentUser?.id && '(You)'}
+                                            </Text>
+                                        </View>
+                                    ))}
+                                </View>
+                            </>
+                        ) : (
+                            <View style={[styles.noteBox, { marginBottom: 20 }]}>
+                                <Text style={styles.noteText}>Tim belum dibagikan oleh Host.</Text>
+                            </View>
+                        )}
+
+                        {opponentTeams.length > 0 && (
+                            <>
+                                <Text style={styles.sectionTitle}>Lawan</Text>
+                                {opponentTeams.map(team => (
+                                    <View key={team.id} style={styles.teamCard}>
+                                        <View style={styles.teamHeader}>
+                                            <Text style={styles.teamName}>{team.name}</Text>
+                                        </View>
+                                        {team.members.map((member: any) => (
+                                            <View key={member.id} style={styles.playerRow}>
+                                                <View style={styles.playerAvatarSmall}>
+                                                    <Text style={{ fontSize: 10 }}>
+                                                        {member.user.name.substring(0, 2).toUpperCase()}
+                                                    </Text>
+                                                </View>
+                                                <Text style={styles.playerText}>{member.user.name}</Text>
+                                            </View>
+                                        ))}
+                                    </View>
+                                ))}
+                            </>
+                        )}
+                    </View>
+                )}
+
                 {/* Organizer Card */}
                 <View style={styles.organizerCard}>
                     <View style={styles.avatar}>
@@ -201,9 +265,15 @@ export default function MatchDetailScreen() {
 
                 {/* Buttons */}
                 <View style={styles.footerButtons}>
-                    <TouchableOpacity style={styles.joinButton} onPress={() => router.push(`/match/${id}/reserve`)}>
-                        <Text style={styles.joinButtonText}>Ikut Tanding</Text>
-                    </TouchableOpacity>
+                    {!userIsJoined ? (
+                        <TouchableOpacity style={styles.joinButton} onPress={() => router.push(`/match/${id}/reserve`)}>
+                            <Text style={styles.joinButtonText}>Ikut Tanding</Text>
+                        </TouchableOpacity>
+                    ) : (
+                        <View style={[styles.joinButton, { backgroundColor: '#E0E0E0', shadowOpacity: 0 }]}>
+                            <Text style={[styles.joinButtonText, { color: '#757575' }]}>Kamu Sudah Terdaftar</Text>
+                        </View>
+                    )}
 
                     <TouchableOpacity style={styles.listButton} onPress={() => router.push(`/match/${id}/participants`)}>
                         <Text style={styles.listButtonText}>Lihat List Peserta</Text>
@@ -445,5 +515,51 @@ const styles = StyleSheet.create({
         color: PRIMARY_GREEN,
         fontSize: 16,
         fontWeight: '700',
+    },
+    sectionTitle: {
+        fontSize: 18,
+        fontWeight: '700',
+        color: '#1C1C1E',
+        marginBottom: 12,
+        marginTop: 24,
+    },
+    teamCard: {
+        backgroundColor: '#fff',
+        borderRadius: 16,
+        padding: 16,
+        marginBottom: 12,
+        borderWidth: 1,
+        borderColor: '#EEEEEE',
+    },
+    teamHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 12,
+        borderBottomWidth: 1,
+        borderBottomColor: '#F5F5F5',
+        paddingBottom: 8,
+    },
+    teamName: {
+        fontSize: 16,
+        fontWeight: '700',
+    },
+    playerRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 8,
+    },
+    playerAvatarSmall: {
+        width: 24,
+        height: 24,
+        borderRadius: 12,
+        backgroundColor: '#E0E0E0',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginRight: 8,
+    },
+    playerText: {
+        fontSize: 14,
+        color: '#424242',
     },
 });

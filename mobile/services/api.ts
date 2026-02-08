@@ -1,12 +1,26 @@
 import { Platform } from 'react-native';
 import { uploadAsync, FileSystemUploadType } from 'expo-file-system/legacy';
+import Constants from 'expo-constants';
 
-const API_URL = Platform.select({
-    android: 'http://192.168.99.211:8080/api',
-    ios: 'http://localhost:8080/api',
-    web: 'http://localhost:8080/api',
-    default: 'http://192.168.99.211:8080/api',
-});
+const getBaseUrl = () => {
+    if (Platform.OS === 'web') return 'http://localhost:8080/api';
+
+    const debuggerHost = Constants.expoConfig?.hostUri;
+    const localhost = debuggerHost?.split(':')[0];
+
+    if (!localhost) {
+        return 'http://192.168.99.211:8080/api'; // Fallback if no debugger (e.g. built APK without env)
+    }
+
+    if (Platform.OS === 'android') {
+        // return `http://10.0.2.2:8080/api`; // If using Emulator
+        return `http://${localhost}:8080/api`; // If using physical device via LAN
+    }
+
+    return `http://${localhost}:8080/api`;
+}
+
+const API_URL = getBaseUrl();
 
 // Types
 export interface User {
@@ -58,7 +72,7 @@ export interface CreateMatchRequest {
     title: string;
     description?: string;
     game_type?: string;
-    club_id: string; // Required now
+    club_id: string; // Required
     date: string; // YYYY-MM-DD
     time: string; // HH:MM
     location: string;
@@ -66,6 +80,7 @@ export interface CreateMatchRequest {
     max_players: number;
     position_quotas?: string; // JSON string
     position_prices?: string; // JSON string
+    status?: string; // 'draft' | 'published'
 }
 
 export interface PositionMaster {
@@ -322,13 +337,6 @@ export const api = {
     },
 
     async createMatch(data: CreateMatchRequest): Promise<Match> {
-        // Basic auth for now or skip if public/mocked
-        // The backend logic for CreateMatch is protected, but we haven't implemented login flow fully in UI
-        // For now, let's assume public or I'll add a dummy token if needed.
-        // Backend `middleware.AuthMiddleware` checks header.
-        // I should probably Implement Login first if I want to use Protected routes.
-        // Or I can temporarily disable auth in backend for testing, OR just implement login.
-        // User requested "connect", so I should try to do it right.
         const token = await getToken();
         const res = await fetch(`${API_URL}/matches`, {
             method: 'POST',
@@ -503,7 +511,7 @@ export const api = {
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}`
-            }
+            },
         });
         if (!res.ok) throw new Error('Failed to delete account');
         return res.json();
@@ -591,12 +599,17 @@ export function setAuthToken(token: string) {
 async function getToken() {
     if (_token) return _token;
 
-    // Auto-login only if NO token is set and we really need one for dev.
-    // Ideally, we shouldn't auto-login if we expect real user auth.
-    // For now, let's DISABLE auto-login for Profile/Booking features to ensure real user is used.
-    // Or we keep it but only if explicit login didn't happen.
-
-    // For "Profile" page to show REAL user, we must rely on what's in _token.
-    // If _token is empty, it means user is NOT logged in.
+    // Auto-login if no token is set (Dev/Test mode)
+    if (!_token) {
+        console.log("[API] Auto-logging in as user1...");
+        try {
+            const data = await api.login('local', 'dummy', 'robby.juli@gmail.com', 'Robby Juli', '123456');
+            setAuthToken(data.token);
+            return data.token;
+        } catch (e) {
+            console.error("[API] Auto-login failed:", e);
+            return '';
+        }
+    }
     return '';
 }

@@ -18,6 +18,8 @@ export default function TeamManagementScreen() {
     const [loading, setLoading] = useState(false);
     const [generating, setGenerating] = useState(false);
 
+    const [isCreator, setIsCreator] = useState(false);
+
     useEffect(() => {
         loadData();
     }, []);
@@ -32,11 +34,15 @@ export default function TeamManagementScreen() {
             ]);
 
             // Check Access
-            if (matchData.creator?.id !== userData.id) {
-                Alert.alert("Akses Ditolak", "Hanya host yang dapat mengatur team.");
-                router.back();
-                return;
-            }
+            const isMatchCreator = matchData.creator?.id === userData.id;
+            setIsCreator(isMatchCreator);
+
+            // Allow everyone to view, but only creator can manage
+            // if (matchData.creator?.id !== userData.id) {
+            //     Alert.alert("Akses Ditolak", "Hanya host yang dapat mengatur team.");
+            //     router.back();
+            //     return;
+            // }
 
             setTeams(teamData);
         } catch (e) {
@@ -48,9 +54,11 @@ export default function TeamManagementScreen() {
         }
     };
     const handleMove = (member: any, currentTeamID: string) => {
+        if (!isCreator) return;
+
         // Show options to move to other teams
         const otherTeams = teams.filter(t => t.id !== currentTeamID);
-        const options = otherTeams.map(t => ({
+        const options: { text: string; onPress?: () => void; style?: "default" | "cancel" | "destructive" }[] = otherTeams.map(t => ({
             text: `Pindah ke ${t.name}`,
             onPress: async () => {
                 try {
@@ -79,14 +87,49 @@ export default function TeamManagementScreen() {
                     <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
                         <Ionicons name="arrow-back" size={24} color="#000" />
                     </TouchableOpacity>
-                    <Text style={styles.headerTitle}>Manage Teams</Text>
+                    <Text style={styles.headerTitle}>{isCreator ? "Manage Teams" : "Team List"}</Text>
                     <TouchableOpacity onPress={loadData}>
                         <Ionicons name="refresh" size={24} color="#000" />
                     </TouchableOpacity>
                 </View>
             </SafeAreaView>
 
+            {/* Content */}
             <ScrollView contentContainerStyle={styles.scrollContent}>
+
+                {/* Host Controls */}
+                {isCreator && (
+                    <View style={styles.hostControls}>
+                        <TouchableOpacity
+                            style={[styles.actionButton, { backgroundColor: teams.length > 0 ? '#F44336' : PRIMARY_GREEN }]}
+                            onPress={async () => {
+                                try {
+                                    setGenerating(true);
+                                    await api.generateTeams(matchID);
+                                    setTimeout(() => loadData(), 1000); // Delay slightly
+                                } catch (e) {
+                                    Alert.alert("Gagal", "Gagal generate teams");
+                                } finally {
+                                    setGenerating(false);
+                                }
+                            }}
+                            disabled={generating}
+                        >
+                            {generating ? (
+                                <Text style={styles.actionButtonText}>Processing...</Text>
+                            ) : (
+                                <Text style={styles.actionButtonText}>
+                                    {teams.length > 0 ? "Reset & Bagi Ulang Team" : "Generate Teams Otomatis"}
+                                </Text>
+                            )}
+                        </TouchableOpacity>
+
+                        {teams.length > 0 && (
+                            <Text style={styles.helperText}>Tap pemain untuk memindahkan ke team lain.</Text>
+                        )}
+                    </View>
+                )}
+
                 {teams.map((team, index) => (
                     <View key={team.id} style={styles.teamCard}>
                         <View style={[styles.teamHeader, { borderLeftColor: team.color || '#000' }]}>
@@ -100,19 +143,15 @@ export default function TeamManagementScreen() {
                                     key={member.id}
                                     style={styles.memberRow}
                                     onPress={() => handleMove(member, team.id)}
+                                    disabled={!isCreator}
                                 >
                                     <View style={styles.avatar}>
                                         <Text style={styles.avatarText}>{member.user.name.charAt(0)}</Text>
                                     </View>
                                     <View style={{ flex: 1 }}>
-                                        <Text style={styles.memberName}>{member.user.name} {member.booking_id /* Should verify GK flag logic in backend or join */}</Text>
-                                        {/* Ideally we pass Position via TeamMember struct from backend or fetch deeply. 
-                                            For now, backend TeamMember has User and BookingID. 
-                                            We need to populate Position to show (GK). 
-                                            Let's rely on User name or just simple move for now. 
-                                        */}
+                                        <Text style={styles.memberName}>{member.user.name}</Text>
                                     </View>
-                                    <Ionicons name="swap-horizontal" size={20} color="#BDBDBD" />
+                                    {isCreator && <Ionicons name="swap-horizontal" size={20} color="#BDBDBD" />}
                                 </TouchableOpacity>
                             ))}
                             {(!team.members || team.members.length === 0) && (
@@ -121,8 +160,17 @@ export default function TeamManagementScreen() {
                         </View>
                     </View>
                 ))}
+
+                {/* Empty State */}
+                {teams.length === 0 && !loading && (
+                    <View style={styles.emptyState}>
+                        <Ionicons name="people-outline" size={48} color="#BDBDBD" />
+                        <Text style={styles.emptyText}>Belum ada pembagian team.</Text>
+                        {!isCreator && <Text style={[styles.emptyText, { marginTop: 8 }]}>Tunggu Host membagikan team.</Text>}
+                    </View>
+                )}
             </ScrollView>
-        </View >
+        </View>
     );
 }
 
@@ -228,5 +276,31 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         color: '#9E9E9E',
         fontSize: 12,
+    },
+    hostControls: {
+        marginBottom: 20,
+    },
+    actionButton: {
+        paddingVertical: 12,
+        paddingHorizontal: 16,
+        borderRadius: 8,
+        alignItems: 'center',
+        justifyContent: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 2,
+    },
+    actionButtonText: {
+        color: '#fff',
+        fontWeight: '700',
+        fontSize: 14,
+    },
+    helperText: {
+        fontSize: 12,
+        color: '#757575',
+        marginTop: 8,
+        textAlign: 'center',
     }
 });

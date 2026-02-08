@@ -18,7 +18,7 @@ type CreateMatchRequest struct {
 type JoinMatchRequest struct {
 	MatchID  string   `json:"match_id"`
 	Date     string   `json:"date"` // Optional if joining by date
-	Position Position `json:"position" binding:"required,oneof=gk player_front player_back"`
+	Position Position `json:"position" binding:"required,oneof=gk player_front player_back defender midfielder forward"`
 }
 
 type RegisterRequest struct {

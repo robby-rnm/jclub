@@ -94,7 +94,7 @@ export default function ReserveSlotScreen() {
                         // So Booking struct still has Uppercase keys by default!
                         // This means `participants.tsx` change to `status`, `is_paid` etc might be WRONG if backend sends Uppercase.
                         // I MUST update `Booking` struct in `models.go` as well.
-                        currentCounts[b.Position] = (currentCounts[b.Position] || 0) + 1;
+                        currentCounts[b.position] = (currentCounts[b.position] || 0) + 1;
                     }
                 });
             }
@@ -161,14 +161,14 @@ export default function ReserveSlotScreen() {
                 {/* Match Info */}
                 {match && (
                     <View style={styles.card}>
-                        <Text style={styles.matchTitle}>{match.Title}</Text>
+                        <Text style={styles.matchTitle}>{match.title}</Text>
                         <Text style={styles.matchDate}>
-                            {format(parseISO(match.Date), 'dd MMMM yyyy', { locale: idID })} • {format(parseISO(match.Date), 'HH:mm', { locale: idID })} WIB
+                            {format(parseISO(match.date), 'dd MMMM yyyy', { locale: idID })} • {format(parseISO(match.date), 'HH:mm', { locale: idID })} WIB
                         </Text>
-                        <Text style={styles.matchLocation}>{match.Location}</Text>
+                        <Text style={styles.matchLocation}>{match.location}</Text>
                         <View style={{ flexDirection: 'row', gap: 8, marginTop: 8 }}>
                             <View style={{ backgroundColor: '#E8F5E9', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 4 }}>
-                                <Text style={{ color: '#2E7D32', fontSize: 12, fontWeight: '600' }}>{match.GameType}</Text>
+                                <Text style={{ color: '#2E7D32', fontSize: 12, fontWeight: '600' }}>{match.game_type}</Text>
                             </View>
                         </View>
                     </View>
@@ -228,7 +228,7 @@ export default function ReserveSlotScreen() {
                     <View style={styles.priceRow}>
                         <Text style={styles.priceLabel}>Harga per slot</Text>
                         <Text style={styles.priceValue}>
-                            {position ? formatCurrency(prices[position] || match?.Price || PRICE_PER_SLOT) : '-'}
+                            {position ? formatCurrency(prices[position] || match?.price || PRICE_PER_SLOT) : '-'}
                         </Text>
                     </View>
 
@@ -242,7 +242,7 @@ export default function ReserveSlotScreen() {
                     <View style={styles.priceRow}>
                         <Text style={styles.totalLabel}>Total</Text>
                         <Text style={styles.totalValue}>
-                            {position ? formatCurrency(prices[position] || match?.Price || PRICE_PER_SLOT) : '-'}
+                            {position ? formatCurrency(prices[position] || match?.price || PRICE_PER_SLOT) : '-'}
                         </Text>
                     </View>
                 </View>

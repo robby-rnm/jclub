@@ -18,6 +18,7 @@ export default function HomeScreen() {
   const insets = useSafeAreaInsets();
 
   const [matches, setMatches] = useState<Match[]>([]); // "Info Hari Ini" matches
+  const [myMatches, setMyMatches] = useState<Match[]>([]); // "Jadwal Tanding Kamu"
   const [myClubs, setMyClubs] = useState<Club[]>([]);  // "Club Saya"
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -25,14 +26,16 @@ export default function HomeScreen() {
   const fetchData = async () => {
     try {
       // Parallel fetch
-      const [matchesData, clubsData, profileData] = await Promise.all([
+      const [matchesData, myMatchesData, clubsData, profileData] = await Promise.all([
         api.getMatches(1, 10), // Latest matches for "Info Hari Ini"
+        api.getMatches(1, 10, '', 'joined'), // My Joined Matches
         api.getClubs(1, 5, '', 'joined'), // My Joined Clubs
         api.getProfile().catch(() => null)
       ]);
 
       if (profileData) setCurrentUser(profileData);
       setMatches(matchesData.reverse());
+      setMyMatches(myMatchesData);
       setMyClubs(clubsData);
     } catch (e) {
       console.error(e);
@@ -52,6 +55,23 @@ export default function HomeScreen() {
   };
 
   // ... (keep format helpers)
+  const formatDate = (dateString: string) => {
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
+    } catch (e) {
+      return dateString;
+    }
+  };
+
+  const formatTime = (dateString: string) => {
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+    } catch (e) {
+      return '';
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -65,7 +85,7 @@ export default function HomeScreen() {
         {/* Header Section (Keep as is) */}
         <View style={[styles.header, { paddingTop: insets.top + 20 }]}>
           <View style={styles.headerContent}>
-            <Text style={styles.greeting}>Halo, Robby 👋</Text>
+            <Text style={styles.greeting}>Halo, {currentUser?.name || "Guest"} 👋</Text>
             <Text style={styles.subGreeting}>Siap main hari ini?</Text>
           </View>
         </View>
@@ -100,6 +120,35 @@ export default function HomeScreen() {
               <Text style={[styles.statValue, { color: '#D32F2F' }]}>{myClubs.length}</Text>
             </View>
           </View>
+        </View>
+
+        {/* Jadwal Tanding Kamu (NEW) */}
+        <View style={styles.sectionContainer}>
+          <Text style={styles.sectionTitle}>Jadwal Tanding Kamu</Text>
+          {myMatches.length > 0 ? (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 16 }}>
+              {myMatches.map((match) => (
+                <TouchableOpacity
+                  key={match.id}
+                  style={styles.matchCard}
+                  onPress={() => router.push(`/match/${match.id}`)}
+                >
+                  <View style={styles.matchDateBadge}>
+                    <Text style={styles.matchDateText}>{formatDate(match.date)}</Text>
+                    <Text style={styles.matchTimeText}>{formatTime(match.date)}</Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.matchTitle} numberOfLines={1}>{match.title}</Text>
+                    <Text style={styles.matchLocation} numberOfLines={1}>{match.location}</Text>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          ) : (
+            <View style={styles.emptyCard}>
+              <Text style={styles.emptyText}>Belum ada jadwal tanding.</Text>
+            </View>
+          )}
         </View>
 
         {/* Club Saya Section */}
@@ -320,10 +369,6 @@ const styles = StyleSheet.create({
     borderTopColor: '#F0F0F0',
     paddingTop: 16,
   },
-  playerCountContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
   playerCountText: {
     fontSize: 14,
     fontWeight: '500',
@@ -332,5 +377,57 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: TEXT_DARK,
+  },
+  matchCard: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 12,
+    width: 250,
+    flexDirection: 'row',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: '#EEEEEE',
+  },
+  matchDateBadge: {
+    backgroundColor: '#E8F5E9',
+    borderRadius: 8,
+    padding: 8,
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  matchDateText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: PRIMARY_GREEN,
+  },
+  matchTimeText: {
+    fontSize: 12,
+    color: PRIMARY_GREEN,
+  },
+  matchTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: TEXT_DARK,
+    marginBottom: 4,
+  },
+  matchLocation: {
+    fontSize: 12,
+    color: '#757575',
+  },
+  emptyCard: {
+    padding: 20,
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#F0F0F0',
+  },
+  emptyText: {
+    color: '#888',
   },
 });

@@ -5,7 +5,7 @@ import { useRouter, Stack, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, createElement } from 'react';
 import { api } from '@/services/api';
 
 const PRIMARY_GREEN = '#3E8E41';
@@ -174,7 +174,8 @@ export default function CreateGroupScreen() {
 
         setLoading(true);
         try {
-            await api.createMatch(clubId as string, {
+            await api.createMatch({
+                club_id: clubId as string,
                 title: name,
                 description: description,
                 game_type: gameType,
@@ -184,8 +185,9 @@ export default function CreateGroupScreen() {
                 position_quotas: JSON.stringify(quotas),
                 position_prices: JSON.stringify(prices),
                 date: date.toISOString().split('T')[0],
-                time: time.toTimeString().split(' ')[0].substring(0, 5)
-            }, status);
+                time: time.toTimeString().split(' ')[0].substring(0, 5),
+                status: status
+            });
             alert(status === 'draft' ? "Draft Saved!" : "Match Published!");
             router.back();
         } catch (e: any) {
@@ -273,25 +275,28 @@ export default function CreateGroupScreen() {
                                         />
                                         <Ionicons name="calendar-outline" size={20} color="#757575" style={[styles.inputIcon, { top: 12 }]} />
                                     </View>
-                                    <DateTimePicker
-                                        value={date}
-                                        mode="date"
-                                        display="default"
-                                        onChange={onDateChange}
-                                        style={{
+                                    {createElement('input', {
+                                        type: 'date',
+                                        value: date.toISOString().split('T')[0],
+                                        onChange: (e: any) => {
+                                            if (e.target.value) {
+                                                const d = new Date(e.target.value);
+                                                if (!isNaN(d.getTime())) {
+                                                    setDate(d);
+                                                }
+                                            }
+                                        },
+                                        style: {
                                             position: 'absolute',
                                             top: 0,
                                             left: 0,
                                             width: '100%',
                                             height: '100%',
-                                            opacity: 1, // Keep it 'visible' to browser
-                                            color: 'transparent',
-                                            backgroundColor: 'transparent',
-                                            borderWidth: 0,
+                                            opacity: 0,
                                             cursor: 'pointer',
-                                            zIndex: 100
-                                        } as any}
-                                    />
+                                            zIndex: 10
+                                        }
+                                    })}
                                 </View>
                             ) : (
                                 <TouchableOpacity onPress={() => setShowDatePicker(true)} style={styles.inputIconContainer}>
@@ -317,25 +322,31 @@ export default function CreateGroupScreen() {
                                             editable={false}
                                         />
                                     </View>
-                                    <DateTimePicker
-                                        value={time}
-                                        mode="time"
-                                        display="default"
-                                        onChange={onTimeChange}
-                                        style={{
+                                    {createElement('input', {
+                                        type: 'time',
+                                        value: time.toTimeString().slice(0, 5),
+                                        onChange: (e: any) => {
+                                            if (e.target.value) {
+                                                const parts = e.target.value.split(':');
+                                                if (parts.length === 2) {
+                                                    const d = new Date(time);
+                                                    d.setHours(parseInt(parts[0]));
+                                                    d.setMinutes(parseInt(parts[1]));
+                                                    setTime(d);
+                                                }
+                                            }
+                                        },
+                                        style: {
                                             position: 'absolute',
                                             top: 0,
                                             left: 0,
                                             width: '100%',
                                             height: '100%',
-                                            opacity: 1,
-                                            color: 'transparent',
-                                            backgroundColor: 'transparent',
-                                            borderWidth: 0,
+                                            opacity: 0,
                                             cursor: 'pointer',
-                                            zIndex: 100
-                                        } as any}
-                                    />
+                                            zIndex: 10
+                                        }
+                                    })}
                                 </View>
                             ) : (
                                 <TouchableOpacity onPress={() => setShowTimePicker(true)}>

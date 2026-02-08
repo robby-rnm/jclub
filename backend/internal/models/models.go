@@ -17,6 +17,9 @@ const (
 	PositionGK          Position = "gk"
 	PositionPlayerFront Position = "player_front"
 	PositionPlayerBack  Position = "player_back"
+	PositionDefender    Position = "defender"
+	PositionMidfielder  Position = "midfielder"
+	PositionForward     Position = "forward"
 )
 
 type BookingStatus string
@@ -93,8 +96,8 @@ type Match struct {
 	Description string `json:"description"`
 	GameType    string `json:"game_type"`
 
-	ClubID string `gorm:"index" json:"club_id"`
-	Club   Club   `gorm:"foreignKey:ClubID" json:"club"`
+	ClubID *string `gorm:"index" json:"club_id"`
+	Club   Club    `gorm:"foreignKey:ClubID" json:"club"`
 
 	CreatorID        string    `gorm:"index" json:"creator_id"`
 	Creator          User      `gorm:"foreignKey:CreatorID" json:"creator"`
@@ -127,21 +130,21 @@ type Booking struct {
 }
 
 type Team struct {
-	ID        string       `gorm:"primaryKey;type:uuid;default:gen_random_uuid()"`
-	MatchID   string       `gorm:"index"`
-	Name      string       // Team A, Team B
-	Color     string       // hex code or name
-	Members   []TeamMember `gorm:"foreignKey:TeamID"`
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	ID        string       `gorm:"primaryKey;type:uuid;default:gen_random_uuid()" json:"id"`
+	MatchID   string       `gorm:"index" json:"match_id"`
+	Name      string       `json:"name"`  // Team A, Team B
+	Color     string       `json:"color"` // hex code or name
+	Members   []TeamMember `gorm:"foreignKey:TeamID" json:"members"`
+	CreatedAt time.Time    `json:"created_at"`
+	UpdatedAt time.Time    `json:"updated_at"`
 }
 
 type TeamMember struct {
-	ID        string `gorm:"primaryKey;type:uuid;default:gen_random_uuid()"`
-	TeamID    string `gorm:"index"`
-	UserID    string `gorm:"index"`
-	User      User   `gorm:"foreignKey:UserID"`
-	BookingID string `gorm:"index"` // Link to the booking that qualified them
+	ID        string `gorm:"primaryKey;type:uuid;default:gen_random_uuid()" json:"id"`
+	TeamID    string `gorm:"index" json:"team_id"`
+	UserID    string `gorm:"index" json:"user_id"`
+	User      User   `gorm:"foreignKey:UserID" json:"user"`
+	BookingID string `gorm:"index" json:"booking_id"` // Link to the booking that qualified them
 }
 
 type Sport struct {

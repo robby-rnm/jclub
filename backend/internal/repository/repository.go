@@ -271,6 +271,19 @@ func (r *repository) GetTeamsByMatchID(matchID string) ([]models.Team, error) {
 }
 
 func (r *repository) DeleteTeamsByMatchID(matchID string) error {
+	// Manual Cascade: Delete members first
+	// 1. Get Team IDs
+	var teamIDs []string
+	r.db.Model(&models.Team{}).Where("match_id = ?", matchID).Pluck("id", &teamIDs)
+
+	if len(teamIDs) > 0 {
+		// 2. Delete Members
+		if err := r.db.Delete(&models.TeamMember{}, "team_id IN ?", teamIDs).Error; err != nil {
+			return err
+		}
+	}
+
+	// 3. Delete Teams
 	return r.db.Delete(&models.Team{}, "match_id = ?", matchID).Error
 }
 

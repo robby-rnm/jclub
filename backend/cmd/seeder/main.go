@@ -36,6 +36,7 @@ func main() {
 	hashedPwdStr := string(hashedPassword)
 
 	var createdUserIDs []string
+	log.Println("Creating 100 users...")
 
 	for i := 1; i <= 100; i++ {
 		email := fmt.Sprintf("user%d@example.com", i)
@@ -63,63 +64,172 @@ func main() {
 			createdUserIDs = append(createdUserIDs, user.ID)
 		}
 	}
-	log.Printf("Seeded users. Total available IDs: %d", len(createdUserIDs))
+	log.Printf("Seeded users. Total IDs: %d", len(createdUserIDs))
 
-	if len(createdUserIDs) < 5 {
-		log.Fatal("Not enough users to create groups")
+	if len(createdUserIDs) < 20 {
+		log.Fatal("Not enough users to create clubs")
 	}
 
-	// 2. Create 20 Groups from 5 random users
-	// Shuffle user IDs to pick 5 random creators
+	// 2. Create 10 Clubs
+	log.Println("Creating 10 Clubs...")
+	clubNames := []string{"Garuda FC", "Tigers United", "Jakarta All Stars", "Bandung Juara", "Surabaya Heroes", "Bali United", "Medan City", "Makassar PSM", "Semarang FC", "Yogya United"}
+
+	// Shuffle user IDs to pick 10 random creators
 	rand.Seed(time.Now().UnixNano())
 	rand.Shuffle(len(createdUserIDs), func(i, j int) {
 		createdUserIDs[i], createdUserIDs[j] = createdUserIDs[j], createdUserIDs[i]
 	})
-	creators := createdUserIDs[:5]
+
+	creators := createdUserIDs[:10]
+	var createdClubIDs []string
+
+	for i, name := range clubNames {
+		creatorID := creators[i]
+
+		club := models.Club{
+			Name:        name,
+			Description: fmt.Sprintf("Official club for %s fans and players.", name),
+			CreatorID:   creatorID,
+			CreatedAt:   time.Now(),
+			UpdatedAt:   time.Now(),
+		}
+
+		if err := db.Create(&club).Error; err != nil {
+			log.Printf("Failed to create club %s: %v", name, err)
+			continue
+		}
+		createdClubIDs = append(createdClubIDs, club.ID)
+
+		// Add creator as member (admin)
+		db.Create(&models.ClubMember{
+			ClubID:    club.ID,
+			UserID:    creatorID,
+			Role:      "admin",
+			CreatedAt: time.Now(),
+		})
+
+		// Add 5-15 random members
+		numMembers := rand.Intn(10) + 5
+		for j := 0; j < numMembers; j++ {
+			memberID := createdUserIDs[rand.Intn(len(createdUserIDs))]
+			if memberID == creatorID {
+				continue
+			}
+
+			// Check distinct
+			var count int64
+			db.Model(&models.ClubMember{}).Where("club_id = ? AND user_id = ?", club.ID, memberID).Count(&count)
+			if count > 0 {
+				continue
+			}
+
+			db.Create(&models.ClubMember{
+				ClubID:    club.ID,
+				UserID:    memberID,
+				Role:      "member",
+				CreatedAt: time.Now(),
+			})
+		}
+	}
+
+	log.Printf("Seeded %d clubs with members.", len(createdClubIDs))
+
+	// 3. Create Matches (Linked to Clubs & Public)
+	log.Println("Creating Matches...")
+
+	// Clear existing data to avoid duplicates/stale data
+	log.Println("Clearing existing matches, bookings, teams...")
+	db.Exec("TRUNCATE TABLE teams, team_members, bookings, matches CASCADE")
+
+	// 3. Create Matches (Linked to Clubs & Public)
+	log.Println("Creating Matches...")
 
 	locations := []string{"Gloria Mini Soccer", "Premier Pitch", "Champions Field", "City Stadium", "Impact Arena"}
 	gameTypes := []string{"minisoccer", "futsal", "football"}
 
-	for i := 1; i <= 20; i++ {
-		creatorID := creators[rand.Intn(len(creators))]
-		date := time.Now().Add(time.Duration(rand.Intn(14)) * 24 * time.Hour) // Random date within next 14 days
-		// Set random time
+	// Create 20 Matches linked to Clubs
+	for _, clubID := range createdClubIDs {
+		// 2 matches per club
+		currentClubID := clubID // capture variable
+		for k := 0; k < 2; k++ {
+			date := time.Now().Add(time.Duration(rand.Intn(30)) * 24 * time.Hour)
+			date = time.Date(date.Year(), date.Month(), date.Day(), 18+rand.Intn(4), 0, 0, 0, date.Location())
+
+			// Fix Random Logic: Pick GameType first
+			gt := gameTypes[rand.Intn(len(gameTypes))]
+
+			// Generate Quotas based on GameType
+			quotas := `{"player_front": 10}`
+			if gt == "minisoccer" {
+				quotas = `{"gk": 2, "player_front": 14}`
+			} else if gt == "futsal" {
+				quotas = `{"gk": 2, "player_front": 10}`
+			} else if gt == "football" {
+				quotas = `{"gk": 2, "defender": 8, "midfielder": 8, "forward": 4}`
+			}
+
+			match := models.Match{
+				Title:          fmt.Sprintf("Club Match #%d", rand.Intn(1000)),
+				Description:    "Exclusive match for club members.",
+				GameType:       gt,
+				ClubID:         &currentClubID,
+				CreatorID:      createdUserIDs[0],
+				Date:           date,
+				Location:       locations[rand.Intn(len(locations))],
+				Price:          float64(50000 + rand.Intn(5)*10000),
+				MaxPlayers:     10 + rand.Intn(3)*2,
+				Status:         "published",
+				PositionQuotas: quotas,
+				CreatedAt:      time.Now(),
+				UpdatedAt:      time.Now(),
+			}
+			db.Create(&match)
+		}
+	}
+
+	// Create 10 Public Matches (No ClubID)
+	for i := 1; i <= 10; i++ {
+		creatorID := createdUserIDs[rand.Intn(len(createdUserIDs))]
+		date := time.Now().Add(time.Duration(rand.Intn(14)) * 24 * time.Hour)
 		date = time.Date(date.Year(), date.Month(), date.Day(), 18+rand.Intn(4), 0, 0, 0, date.Location())
 
+		// Fix Random Logic: Pick GameType first
+		gt := gameTypes[rand.Intn(len(gameTypes))]
+
+		// Generate Quotas based on GameType
+		quotas := `{"player_front": 10}`
+		if gt == "minisoccer" {
+			quotas = `{"gk": 2, "player_front": 14}`
+		} else if gt == "futsal" {
+			quotas = `{"gk": 2, "player_front": 10}`
+		} else if gt == "football" {
+			quotas = `{"gk": 2, "defender": 8, "midfielder": 8, "forward": 4}`
+		}
+
 		match := models.Match{
-			Title:       fmt.Sprintf("Mabar Seru #%d", i),
-			Description: "Let's assume this is a fun match.",
-			GameType:    gameTypes[rand.Intn(len(gameTypes))],
-			CreatorID:   creatorID,
-			Date:        date,
-			Location:    locations[rand.Intn(len(locations))],
-			Price:       float64(50000 + rand.Intn(5)*10000), // 50k - 90k
-			MaxPlayers:  10 + rand.Intn(3)*2,                 // 10, 12, 14
-			Status:      "open",
-			CreatedAt:   time.Now(),
-			UpdatedAt:   time.Now(),
+			Title:          fmt.Sprintf("Public Mabar #%d", i),
+			Description:    "Open for everyone!",
+			GameType:       gt,
+			CreatorID:      creatorID,
+			Date:           date,
+			Location:       locations[rand.Intn(len(locations))],
+			Price:          float64(40000 + rand.Intn(5)*10000),
+			MaxPlayers:     10 + rand.Intn(3)*2,
+			Status:         "published",
+			PositionQuotas: quotas,
+			CreatedAt:      time.Now(),
+			UpdatedAt:      time.Now(),
+			ClubID:         nil, // Explicitly nil
 		}
 
 		if err := db.Create(&match).Error; err != nil {
 			log.Printf("Failed to create match: %v", err)
 			continue
 		}
-
-		// Auto-book owner
-		booking := models.Booking{
-			MatchID:       match.ID,
-			UserID:        creatorID,
-			Position:      models.PositionPlayerFront,
-			Status:        models.StatusConfirmed,
-			WaitlistOrder: 0,
-			IsPaid:        true,
-			CreatedAt:     time.Now(),
-			UpdatedAt:     time.Now(),
-		}
-		db.Create(&booking)
 	}
+	log.Println("Seeded matches (Club & Public).")
 
-	// 3. Seed Master Data (Sports)
+	// 4. Seed Master Data (Sports)
 	sports := []models.Sport{
 		{
 			Name: "Mini Soccer",
@@ -185,7 +295,6 @@ func main() {
 				// Force update for football to apply new positions
 				db.Delete(&models.SportPosition{}, "sport_id = ?", existing.ID)
 				db.Delete(&existing)
-				log.Println("Deleted old Football data to update positions.")
 			} else {
 				continue
 			}
@@ -197,5 +306,5 @@ func main() {
 	}
 	log.Println("Seeded master sports data.")
 
-	log.Println("Seeding complete! Created 100 users (if not existed) and 20 groups.")
+	log.Println("Seeding complete! 100 Users, ~10 Clubs, ~30 Matches.")
 }
