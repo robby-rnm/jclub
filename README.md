@@ -52,6 +52,86 @@ npx expo start
 # Scan QR code with Expo Go
 ```
 
+## Deployment (Production)
+
+This guide covers deploying the Go backend to a Linux server (e.g., Ubuntu).
+
+### 1. Environment Setup
+Create a `.env` file in the production directory (e.g., `/opt/jclub`):
+```bash
+DATABASE_URL=postgres://user:password@localhost:5432/jclub?sslmode=disable
+PORT=8080
+JWT_SECRET=your_production_secret
+# Add Google/Facebook client IDs if using OAuth
+```
+
+### 2. Build the Application
+On your local machine (or build server), compile the binary for Linux:
+```bash
+cd backend
+GOOS=linux GOARCH=amd64 go build -o jclub-api ./cmd/api
+```
+Copy the `jclub-api` binary and `.env` to your server (e.g., via `scp`).
+
+### 3. Systemd Service
+Create a service file to keep the app running in the background.
+File: `/etc/systemd/system/jclub.service`
+
+```ini
+[Unit]
+Description=JClub API Service
+After=network.target postgresql.service
+
+[Service]
+Type=simple
+User=www-data
+WorkingDirectory=/opt/jclub
+ExecStart=/opt/jclub/jclub-api
+Restart=always
+EnvironmentFile=/opt/jclub/.env
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Enable and start the service:
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable jclub
+sudo systemctl start jclub
+sudo systemctl status jclub
+```
+
+### 4. Nginx Reverse Proxy
+Install Nginx and configure it to forward traffic to the Go app.
+File: `/etc/nginx/sites-available/jclub.conf`
+
+```nginx
+server {
+    server_name api.yourdomain.com;
+
+    location / {
+        proxy_pass http://localhost:8080;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+}
+```
+
+Enable the site and restart Nginx:
+```bash
+sudo ln -s /etc/nginx/sites-available/jclub.conf /etc/nginx/sites-enabled/
+sudo nginx -t
+sudo systemctl restart nginx
+```
+
+### 5. SSL (Optional)
+Secure your API with Let's Encrypt:
+```bash
+sudo apt install certbot python3-certbot-nginx
+sudo certbot --nginx -d api.yourdomain.com
+```
+
 ## API Endpoints
 - `POST /api/login`: Authenticate user
 - `GET /api/matches`: List matches
