@@ -49,13 +49,11 @@ export default function UserManagement() {
         e.preventDefault();
         try {
             if (editingUser) {
-                // Update - only send non-empty fields
                 const updateData = {};
                 if (formData.name) updateData.name = formData.name;
                 if (formData.phone) updateData.phone = formData.phone;
                 await api.put(`/admin/users/${editingUser.id}`, updateData);
             } else {
-                // Create
                 await api.post('/admin/users', formData);
             }
             setShowModal(false);
@@ -77,7 +75,7 @@ export default function UserManagement() {
     };
 
     const handleDelete = async (id) => {
-        if (!confirm('Delete this user? This action cannot be undone.')) return;
+        if (!confirm('Delete this user?')) return;
         try {
             await api.delete(`/admin/users/${id}`);
             fetchUsers();
@@ -98,11 +96,10 @@ export default function UserManagement() {
                 <button onClick={openCreateModal}>+ New User</button>
             </header>
 
-            {/* Create/Edit Modal */}
             <Modal isOpen={showModal} onClose={() => setShowModal(false)} title={editingUser ? 'Edit User' : 'Create New User'}>
                 <form onSubmit={handleSubmit}>
                     <div style={{ marginBottom: '1rem' }}>
-                        <label style={{ display: 'block', marginBottom: '0.5rem', color: '#f8fafc', fontWeight: '500' }}>Name</label>
+                        <label style={{ display: 'block', marginBottom: '0.5rem' }}>Name</label>
                         <input
                             type="text"
                             className="input-field"
@@ -112,7 +109,7 @@ export default function UserManagement() {
                         />
                     </div>
                     <div style={{ marginBottom: '1rem' }}>
-                        <label style={{ display: 'block', marginBottom: '0.5rem', color: '#f8fafc', fontWeight: '500' }}>Email</label>
+                        <label style={{ display: 'block', marginBottom: '0.5rem' }}>Email</label>
                         <input
                             type="email"
                             className="input-field"
@@ -124,7 +121,7 @@ export default function UserManagement() {
                     </div>
                     {!editingUser && (
                         <div style={{ marginBottom: '1rem' }}>
-                            <label style={{ display: 'block', marginBottom: '0.5rem', color: '#f8fafc', fontWeight: '500' }}>Password</label>
+                            <label style={{ display: 'block', marginBottom: '0.5rem' }}>Password</label>
                             <input
                                 type="password"
                                 className="input-field"
@@ -134,25 +131,15 @@ export default function UserManagement() {
                             />
                         </div>
                     )}
-                    <div style={{ marginBottom: '1rem' }}>
-                        <label style={{ display: 'block', marginBottom: '0.5rem', color: '#f8fafc', fontWeight: '500' }}>Phone</label>
-                        <input
-                            type="text"
-                            className="input-field"
-                            value={formData.phone}
-                            onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                        />
-                    </div>
                     <button type="submit">{editingUser ? 'Update' : 'Create'}</button>
                 </form>
             </Modal>
 
-            {/* Role Modal */}
             <Modal isOpen={showRoleModal} onClose={() => setShowRoleModal(false)} title="Edit User Role">
                 <form onSubmit={handleUpdateRole}>
-                    <p style={{ color: '#94a3b8', marginBottom: '1rem' }}><strong>{editingUser?.name}</strong><br/>{editingUser?.email}</p>
+                    <p><strong>{editingUser?.name}</strong><br/>{editingUser?.email}</p>
                     <div style={{ marginBottom: '1rem' }}>
-                        <label style={{ display: 'block', marginBottom: '0.5rem', color: '#f8fafc', fontWeight: '500' }}>Role</label>
+                        <label style={{ display: 'block', marginBottom: '0.5rem' }}>Role</label>
                         <select
                             className="input-field"
                             value={roleForm.role}
@@ -166,79 +153,50 @@ export default function UserManagement() {
                 </form>
             </Modal>
 
-            <div style={{ marginBottom: '1rem' }}>
-                <input
-                    type="text"
-                    className="input-field"
-                    placeholder="Search users..."
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    style={{ maxWidth: '300px' }}
-                />
-            </div>
+            <input
+                type="text"
+                placeholder="Search users..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                style={{ maxWidth: '300px', marginBottom: '1rem' }}
+            />
 
             {loading ? (
                 <p>Loading...</p>
             ) : (
                 <div className="card">
-                    <div className="table-responsive">
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                    <table style={{ width: '100%' }}>
                         <thead>
-                            <tr style={{ borderBottom: '1px solid #334155' }}>
-                                <th style={{ textAlign: 'left', padding: '0.75rem', color: '#94a3b8' }}>Name</th>
-                                <th style={{ textAlign: 'left', padding: '0.75rem', color: '#94a3b8' }}>Email</th>
-                                <th style={{ textAlign: 'left', padding: '0.75rem', color: '#94a3b8' }}>Phone</th>
-                                <th style={{ textAlign: 'left', padding: '0.75rem', color: '#94a3b8' }}>Provider</th>
-                                <th style={{ textAlign: 'left', padding: '0.75rem', color: '#94a3b8' }}>Role</th>
-                                <th style={{ textAlign: 'left', padding: '0.75rem', color: '#94a3b8' }}>Actions</th>
+                            <tr>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Role</th>
+                                <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                             {filteredUsers.map(user => (
-                                <tr key={user.id} style={{ borderBottom: '1px solid #334155' }}>
-                                    <td style={{ padding: '0.75rem', color: '#f8fafc' }}>{user.name}</td>
-                                    <td style={{ padding: '0.75rem', color: '#f8fafc' }}>{user.email}</td>
-                                    <td style={{ padding: '0.75rem', color: '#f8fafc' }}>{user.phone || '-'}</td>
-                                    <td style={{ padding: '0.75rem' }}>
+                                <tr key={user.id}>
+                                    <td>{user.name}</td>
+                                    <td>{user.email}</td>
+                                    <td>
                                         <span style={{ 
-                                            padding: '0.25rem 0.75rem',
-                                            borderRadius: '0.5rem',
-                                            fontSize: '0.75rem',
-                                            fontWeight: 'bold',
-                                            backgroundColor: user.provider === 'local' ? '#2563eb' : '#7c3aed',
-                                            color: 'white',
-                                            textTransform: 'uppercase'
-                                        }}>
-                                            {user.provider}
-                                        </span>
-                                    </td>
-                                    <td style={{ padding: '0.75rem' }}>
-                                        <span style={{ 
-                                            padding: '0.25rem 0.75rem',
-                                            borderRadius: '0.5rem',
-                                            fontSize: '0.75rem',
-                                            fontWeight: 'bold',
+                                            padding: '0.25rem 0.5rem',
                                             backgroundColor: user.role === 'admin' ? '#dc2626' : '#059669',
-                                            color: 'white',
-                                            textTransform: 'uppercase'
+                                            color: 'white'
                                         }}>
                                             {user.role || 'user'}
                                         </span>
                                     </td>
-                                    <td style={{ padding: '0.75rem' }}>
-                                        <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                            <button onClick={() => openEditModal(user)} style={{ backgroundColor: '#f59e0b', fontSize: '0.7rem' }}>Edit</button>
-                                            <button onClick={() => openRoleModal(user)} style={{ backgroundColor: '#8b5cf6', fontSize: '0.7rem' }}>Role</button>
-                                            <button onClick={() => handleDelete(user.id)} style={{ backgroundColor: '#ef4444', fontSize: '0.7rem' }}>Delete</button>
-                                        </div>
+                                    <td>
+                                        <button onClick={() => openEditModal(user)}>Edit</button>
+                                        <button onClick={() => openRoleModal(user)}>Role</button>
+                                        <button onClick={() => handleDelete(user.id)}>Delete</button>
                                     </td>
                                 </tr>
                             ))}
                         </tbody>
                     </table>
-                    {filteredUsers.length === 0 && (
-                        <p style={{ textAlign: 'center', padding: '2rem', color: '#94a3b8' }}>No users found</p>
-                    )}
                 </div>
             )}
         </div>
