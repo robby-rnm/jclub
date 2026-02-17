@@ -45,6 +45,17 @@ export default function Dashboard() {
         navigate('/login');
     };
 
+    const formatDate = (dateStr) => {
+        if (!dateStr) return 'No Date';
+        try {
+            const date = new Date(dateStr);
+            if (isNaN(date.getTime())) return 'Invalid Date';
+            return date.toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+        } catch {
+            return 'Invalid Date';
+        }
+    };
+
     return (
         <div className="container">
             <header style={{
@@ -63,7 +74,7 @@ export default function Dashboard() {
                 <h2 style={{ marginBottom: '1rem' }}>Create New Match</h2>
                 <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-end' }}>
                     <div style={{ flex: 1 }}>
-                        <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-dim)' }}>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', color: '#94a3b8' }}>
                             Select Date for Next Match
                         </label>
                         <input
@@ -85,28 +96,37 @@ export default function Dashboard() {
             <div className="grid">
                 {matches.map(match => (
                     <div
-                        key={match.ID}
+                        key={match.id}
                         className="card match-item"
                         style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '1rem', cursor: 'pointer' }}
-                        onClick={() => navigate(`/match/${match.ID}`)}
+                        onClick={() => navigate(`/match/${match.id}`)}
                     >
                         <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
-                            <h3 style={{ margin: 0, color: 'var(--primary)' }}>
-                                {new Date(match.Date).toLocaleDateString()}
+                            <h3 style={{ margin: 0, color: '#8b5cf6' }}>
+                                {match.title || 'Untitled Match'}
                             </h3>
-                            <span className={`badge ${match.Status === 'open' ? 'badge-open' : 'badge-waitlist'}`}>
-                                {match.Status}
+                            <span style={{
+                                padding: '0.25rem 0.75rem',
+                                borderRadius: '0.5rem',
+                                fontSize: '0.75rem',
+                                fontWeight: 'bold',
+                                backgroundColor: match.status === 'published' ? '#059669' : '#d97706',
+                                color: 'white',
+                                textTransform: 'uppercase'
+                            }}>
+                                {match.status || 'draft'}
                             </span>
                         </div>
 
-                        <div style={{ width: '100%', display: 'flex', justifyContent: 'space-between', color: 'var(--text-dim)' }}>
-                            <span>Click to manage bookings & teams</span>
+                        <div style={{ width: '100%', display: 'flex', justifyContent: 'space-between', color: '#94a3b8' }}>
+                            <span>{formatDate(match.date)}</span>
+                            <span>{match.location || 'No location'}</span>
                         </div>
                     </div>
                 ))}
 
                 {matches.length === 0 && (
-                    <p style={{ color: 'var(--text-dim)', fontStyle: 'italic' }}>
+                    <p style={{ color: '#94a3b8', fontStyle: 'italic' }}>
                         No matches found. Create one above.
                     </p>
                 )}

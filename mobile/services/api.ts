@@ -3,21 +3,21 @@ import { uploadAsync, FileSystemUploadType } from 'expo-file-system/legacy';
 import Constants from 'expo-constants';
 
 const getBaseUrl = () => {
-    if (Platform.OS === 'web') return 'http://localhost:8080/api';
+    if (Platform.OS === 'web') return process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8081/api';
 
     const debuggerHost = Constants.expoConfig?.hostUri;
     const localhost = debuggerHost?.split(':')[0];
 
     if (!localhost) {
-        return 'http://192.168.99.211:8080/api'; // Fallback if no debugger (e.g. built APK without env)
+        return 'http://192.168.99.211:8081/api'; // Fallback if no debugger (e.g. built APK without env)
     }
 
     if (Platform.OS === 'android') {
-        // return `http://10.0.2.2:8080/api`; // If using Emulator
-        return `http://${localhost}:8080/api`; // If using physical device via LAN
+        // return `http://10.0.2.2:8081/api`; // If using Emulator
+        return `http://${localhost}:8081/api`; // If using physical device via LAN
     }
 
-    return `http://${localhost}:8080/api`;
+    return `http://${localhost}:8081/api`;
 }
 
 const API_URL = getBaseUrl();

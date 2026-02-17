@@ -3,7 +3,7 @@
     "name": "mobile",
     "slug": "mobile",
     "version": "1.0.0",
-    "orientation": "portrait",
+    "orientation": "default",
     "icon": "./assets/images/icon.png",
     "scheme": "mobile",
     "userInterfaceStyle": "light",
@@ -25,7 +25,15 @@
     },
     "web": {
       "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/favicon.png",
+      "viewport": {
+        "width": "device-width",
+        "height": "device-height",
+        "initialScale": "1",
+        "minimumScale": "1",
+        "maximumScale": "1",
+        "userScalable": false
+      }
     },
     "plugins": [
       "expo-router",
