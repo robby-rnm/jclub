@@ -64,6 +64,17 @@ func main() {
 		// Public
 		api.POST("/register", handler.Register)
 		api.POST("/login", handler.Login)
+
+	// Admin
+	admin := api.Group("/admin")
+	{
+		admin.GET("/users", handler.AdminGetAllUsers)
+		admin.GET("/sports", handler.GetMasterSports)
+	}
+
+	// OAuth
+	api.GET("/oauth/login", handler.GoogleLogin)
+	api.GET("/oauth/callback", handler.GoogleCallback)
 		api.GET("/matches", handler.ListMatches)
 		api.GET("/matches/:id", handler.GetMatch)
 		api.GET("/matches/:id/teams", handler.GetTeams)

@@ -24,6 +24,7 @@ type Repository interface {
 	CreateUser(user *models.User) error
 	GetUserByEmail(email string) (*models.User, error)
 	GetUserByID(id string) (*models.User, error)
+	GetAllUsers() ([]models.User, error)
 	UpdateUser(user *models.User) error
 	DeleteUser(id string) error
 
@@ -435,4 +436,12 @@ func (r *repository) GetWaitlist(matchID string, position models.Position) ([]mo
 	err := r.db.Where("match_id = ? AND position = ? AND status = ?", matchID, position, models.StatusWaitlist).
 		Order("waitlist_order ASC").Find(&bookings).Error
 	return bookings, err
+}
+
+
+// GetAllUsers - get all users
+func (r *repository) GetAllUsers() ([]models.User, error) {
+	var users []models.User
+	err := r.db.Find(&users).Error
+	return users, err
 }

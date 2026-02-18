@@ -1325,3 +1325,54 @@ func (h *Handler) LeaveClub(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "Left club successfully"})
 }
+
+
+// AdminGetAllUsers - get all users
+func (h *Handler) AdminGetAllUsers(c *gin.Context) {
+	users, err := h.Repo.GetAllUsers()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, users)
+}
+
+// GoogleLogin - initiates Google OAuth
+func (h *Handler) GoogleLogin(c *gin.Context) {
+	initGoogleOAuth()
+	state := "admin-oauth-state"
+	authURL := GetGoogleAuthURL(state)
+	c.Redirect(302, authURL)
+}
+
+// GoogleCallback - handles OAuth callback
+func (h *Handler) GoogleCallback(c *gin.Context) {
+	code := c.Query("code")
+	if code == "" {
+		c.JSON(400, gin.H{"error": "No code provided"})
+		return
+	}
+	userInfo, err := GetGoogleUserInfo(code)
+	if err != nil {
+		c.JSON(400, gin.H{"error": "Failed to get user info: " + err.Error()})
+		return
+	}
+	user, err := h.Repo.GetUserByEmail(userInfo.Email)
+	if err != nil {
+		user = &models.User{
+			Name: userInfo.Name, Email: userInfo.Email,
+			Avatar: userInfo.Picture, Provider: "google",
+			Role: models.UserRole("player"),
+		}
+		h.Repo.CreateUser(user)
+	} else {
+		user.Name = userInfo.Name
+		user.Avatar = userInfo.Picture
+		h.Repo.UpdateUser(user)
+	}
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"user_id": user.ID, "exp": time.Now().Add(time.Hour * 72).Unix(),
+	})
+	tokenString, _ := token.SignedString(middleware.SecretKey)
+	c.Redirect(302, "https://jclubadmin.gsteknologi.com/oauth/callback?token="+tokenString)
+}

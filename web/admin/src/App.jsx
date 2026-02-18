@@ -71,6 +71,7 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<Login />} />
+        <Route path="/oauth/callback" element={<Login />} />
         <Route path="/dashboard" element={<PrivateRoute><Navigation /><Dashboard /></PrivateRoute>} />
         <Route path="/stats" element={<PrivateRoute><Navigation /><Stats /></PrivateRoute>} />
         <Route path="/matches" element={<PrivateRoute><Navigation /><MatchManagement /></PrivateRoute>} />
