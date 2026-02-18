@@ -8,7 +8,7 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as WebBrowser from 'expo-web-browser';
 import * as Google from 'expo-auth-session/providers/google';
-import * as Facebook from 'expo-auth-session/providers/facebook';
+// Facebook import disabled - import * as Facebook from 'expo-auth-session/providers/facebook';
 import { ResponseType } from 'expo-auth-session';
 
 WebBrowser.maybeCompleteAuthSession();
@@ -29,12 +29,11 @@ export default function Login() {
         clientId: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID_WEB,
         iosClientId: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID_IOS,
         androidClientId: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID_ANDROID,
+        scopes: ['openid', 'email', 'profile'],
+        redirectUri: 'https://auth.expo.io/@anonymous/mobile',
     });
 
-    // Facebook Auth Request (using environment variables)
-    const [fbRequest, fbResponse, fbPromptAsync] = Facebook.useAuthRequest({
-        clientId: process.env.EXPO_PUBLIC_FACEBOOK_APP_ID,
-    });
+    // Facebook Auth disabled - for now
 
     useEffect(() => {
         if (googleResponse?.type === 'success') {
@@ -43,12 +42,13 @@ export default function Login() {
         }
     }, [googleResponse]);
 
-    useEffect(() => {
-        if (fbResponse?.type === 'success') {
-            const { authentication } = fbResponse;
-            handleSocialLoginSuccess('facebook', authentication?.accessToken);
-        }
-    }, [fbResponse]);
+    // Facebook useEffect disabled
+    // useEffect(() => {
+    //     if (fbResponse?.type === 'success') {
+    //         const { authentication } = fbResponse;
+    //         handleSocialLoginSuccess('facebook', authentication?.accessToken);
+    //     }
+    // }, [fbResponse]);
 
     const handleSocialLoginSuccess = async (provider: string, token: string | undefined) => {
         if (!token) return;
