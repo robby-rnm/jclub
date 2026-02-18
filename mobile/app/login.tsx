@@ -172,22 +172,6 @@ export default function Login() {
                             </View>
                             <Text style={styles.socialBtnText}>Masuk dengan Google</Text>
                         </TouchableOpacity>
-
-                        {/* Facebook Login Button - disabled by Parjo
-                        <TouchableOpacity
-                            style={[styles.socialButton, styles.fbBtn]}
-                            onPress={() => handleSocialLogin('facebook')}
-                            disabled={loading}
-                        >
-                            <View style={styles.iconWrapper}>
-                                <FontAwesome5 name="facebook-f" size={20} color="#fff" />
-                            </View>
-                            <Text style={styles.socialBtnText}>Masuk dengan Facebook</Text>
-                        </TouchableOpacity>
-                        */}
-
-                        <TouchableOpacity onPress={() => router.push('/register')} style={styles.signUpContainer}>
-                            <Text style={styles.footerText}>Belum punya akun? <Text style={styles.linkText}>Daftar</Text></Text>
                         </TouchableOpacity>
                     </View>
 
