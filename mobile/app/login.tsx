@@ -8,14 +8,16 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as WebBrowser from 'expo-web-browser';
 import * as Google from 'expo-auth-session/providers/google';
-import * as Facebook from 'expo-auth-session/providers/facebook';
+// Facebook login disabled - commented out by Parjo
+// import * as Facebook from 'expo-auth-session/providers/facebook';
 import { ResponseType } from 'expo-auth-session';
 
 WebBrowser.maybeCompleteAuthSession();
 
 const PRIMARY_GREEN = '#3E8E41';
 const GOOGLE_COLOR = '#DB4437';
-const FACEBOOK_COLOR = '#1877F2';
+// Facebook color - disabled
+// const FACEBOOK_COLOR = '#1877F2';
 
 export default function Login() {
     const { signIn } = useSession();
@@ -29,12 +31,14 @@ export default function Login() {
         clientId: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID_WEB,
         iosClientId: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID_IOS,
         androidClientId: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID_ANDROID,
+        scopes: ['openid', 'email', 'profile'],
+        redirectUri: 'https://auth.expo.io/@anonymous/mobile',
     });
 
-    // Facebook Auth Request (using environment variables)
-    const [fbRequest, fbResponse, fbPromptAsync] = Facebook.useAuthRequest({
-        clientId: process.env.EXPO_PUBLIC_FACEBOOK_APP_ID,
-    });
+    // Facebook Auth Request - disabled
+    // const [fbRequest, fbResponse, fbPromptAsync] = Facebook.useAuthRequest({
+    //     clientId: process.env.EXPO_PUBLIC_FACEBOOK_APP_ID,
+    // });
 
     useEffect(() => {
         if (googleResponse?.type === 'success') {
@@ -43,12 +47,13 @@ export default function Login() {
         }
     }, [googleResponse]);
 
-    useEffect(() => {
-        if (fbResponse?.type === 'success') {
-            const { authentication } = fbResponse;
-            handleSocialLoginSuccess('facebook', authentication?.accessToken);
-        }
-    }, [fbResponse]);
+    // Facebook useEffect - disabled
+    // useEffect(() => {
+    //     if (fbResponse?.type === 'success') {
+    //         const { authentication } = fbResponse;
+    //         handleSocialLoginSuccess('facebook', authentication?.accessToken);
+    //     }
+    // }, [fbResponse]);
 
     const handleSocialLoginSuccess = async (provider: string, token: string | undefined) => {
         if (!token) return;
@@ -92,13 +97,14 @@ export default function Login() {
                 return;
             }
             googlePromptAsync();
-        } else if (provider === 'facebook') {
-            if (!process.env.EXPO_PUBLIC_FACEBOOK_APP_ID) {
-                Alert.alert("Configuration Required", "Facebook App ID is missing in .env file.");
-                return;
-            }
-            fbPromptAsync();
-        }
+        // Facebook login handler - disabled
+        // } else if (provider === 'facebook') {
+        //     if (!process.env.EXPO_PUBLIC_FACEBOOK_APP_ID) {
+        //         Alert.alert("Configuration Required", "Facebook App ID is missing in .env file.");
+        //         return;
+        //     }
+        //     fbPromptAsync();
+        // }
     };
 
     return (
@@ -167,6 +173,7 @@ export default function Login() {
                             <Text style={styles.socialBtnText}>Masuk dengan Google</Text>
                         </TouchableOpacity>
 
+                        {/* Facebook Login Button - disabled by Parjo
                         <TouchableOpacity
                             style={[styles.socialButton, styles.fbBtn]}
                             onPress={() => handleSocialLogin('facebook')}
@@ -177,6 +184,7 @@ export default function Login() {
                             </View>
                             <Text style={styles.socialBtnText}>Masuk dengan Facebook</Text>
                         </TouchableOpacity>
+                        */}
 
                         <TouchableOpacity onPress={() => router.push('/register')} style={styles.signUpContainer}>
                             <Text style={styles.footerText}>Belum punya akun? <Text style={styles.linkText}>Daftar</Text></Text>
@@ -309,9 +317,10 @@ const styles = StyleSheet.create({
     googleBtn: {
         backgroundColor: GOOGLE_COLOR,
     },
-    fbBtn: {
-        backgroundColor: FACEBOOK_COLOR,
-    },
+    // Facebook button style - disabled
+    // fbBtn: {
+    //     backgroundColor: FACEBOOK_COLOR,
+    // },
     iconWrapper: {
         position: 'absolute',
         left: 24,

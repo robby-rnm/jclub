@@ -64,6 +64,11 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "eas": {
+        "channel": "default"
+      }
     }
   }
 }
