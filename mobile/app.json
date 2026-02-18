@@ -9,7 +9,8 @@
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.jclub.app"
     },
     "android": {
       "adaptiveIcon": {
@@ -37,6 +38,18 @@
     },
     "plugins": [
       "expo-router",
+      [
+        "expo-auth-session",
+        {
+          "google": {
+            "clientId": "1043625471796-m5453ulsspucqg3fi6q77dd17q028pda.apps.googleusercontent.com",
+            "iosClientId": "1043625471796-m5453ulsspucqg3fi6q77dd17q028pda.apps.googleusercontent.com",
+            "androidClientId": "1043625471796-m5453ulsspucqg3fi6q77dd17q028pda.apps.googleusercontent.com",
+            "scopes": ["profile", "email"],
+            "redirectUri": "https://auth.expo.io/@jclubadm/mobile"
+          }
+        }
+      ],
       [
         "expo-splash-screen",
         {
