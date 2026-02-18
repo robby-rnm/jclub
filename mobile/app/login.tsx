@@ -172,7 +172,6 @@ export default function Login() {
                             </View>
                             <Text style={styles.socialBtnText}>Masuk dengan Google</Text>
                         </TouchableOpacity>
-                        </TouchableOpacity>
                     </View>
 
                     {loading && (
