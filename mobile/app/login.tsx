@@ -29,6 +29,7 @@ export default function Login() {
         clientId: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID_WEB,
         iosClientId: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID_IOS,
         androidClientId: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID_ANDROID,
+        redirectUri: 'https://auth.expo.io/@jclubadm/mobile',
     });
 
     // Facebook Auth disabled - for now
