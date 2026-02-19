@@ -594,7 +594,6 @@ let _token = '';
 
 // localStorage key for web
 const TOKEN_STORAGE_KEY = 'jclub_auth_token';
-const AUTO_LOGIN_ENABLED = process.env.EXPO_PUBLIC_AUTO_LOGIN === 'true';
 
 function loadTokenFromStorage(): string {
     if (typeof window !== 'undefined' && window.localStorage) {
@@ -628,19 +627,7 @@ async function getToken() {
         _token = storedToken;
         return _token;
     }
-
-    // Auto-login only if explicitly enabled (for development)
-    if (AUTO_LOGIN_ENABLED) {
-        console.log("[API] Auto-logging in as user1...");
-        try {
-            const data = await api.login('local', 'dummy', 'robby.juli@gmail.com', 'Robby Juli', '123456');
-            setAuthToken(data.token);
-            return data.token;
-        } catch (e) {
-            console.error("[API] Auto-login failed:", e);
-            return '';
-        }
-    }
     
+    // No auto-login - user must login manually
     return '';
 }
