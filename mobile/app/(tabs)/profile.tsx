@@ -47,7 +47,8 @@ export default function ProfileScreen() {
                     style: "destructive",
                     onPress: () => {
                         signOut();
-                        router.replace('/login');
+                        // Note: _layout.tsx will automatically redirect to login when session is null
+                        // No need to call router.replace('/login')
                     }
                 }
             ]
@@ -67,7 +68,7 @@ export default function ProfileScreen() {
                         try {
                             await api.deleteAccount();
                             signOut();
-                            router.replace('/login');
+                            // Note: _layout.tsx will automatically redirect to login when session is null
                         } catch (e) {
                             Alert.alert('Error', 'Gagal menghapus akun');
                         }
