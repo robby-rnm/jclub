@@ -1,5 +1,7 @@
 import React from 'react';
 
+const TOKEN_STORAGE_KEY = 'jclub_auth_token';
+
 const AuthContext = React.createContext<{
     signIn: (provider?: string, email?: string, token?: string, password?: string) => Promise<void> | null;
     signOut: () => void;
@@ -23,9 +25,25 @@ export function useSession() {
     return value;
 }
 
+function loadStoredToken(): string | null {
+    if (typeof window !== 'undefined' && window.localStorage) {
+        return localStorage.getItem(TOKEN_STORAGE_KEY);
+    }
+    return null;
+}
+
 export function SessionProvider(props: React.PropsWithChildren) {
-    const [session, setSession] = React.useState(null);
-    const [isLoading, setIsLoading] = React.useState(false);
+    const [session, setSession] = React.useState<string | null>(null);
+    const [isLoading, setIsLoading] = React.useState(true);
+
+    // Check for stored token on mount
+    React.useEffect(() => {
+        const storedToken = loadStoredToken();
+        if (storedToken) {
+            setSession(storedToken);
+        }
+        setIsLoading(false);
+    }, []);
 
     return (
         <AuthContext.Provider
@@ -50,6 +68,10 @@ export function SessionProvider(props: React.PropsWithChildren) {
                     const { setAuthToken } = require('./services/api');
                     setAuthToken('');
                     setSession(null);
+                    // Clear localStorage
+                    if (typeof window !== 'undefined' && window.localStorage) {
+                        localStorage.removeItem(TOKEN_STORAGE_KEY);
+                    }
                 },
                 session,
                 isLoading,

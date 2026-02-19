@@ -592,15 +592,45 @@ export const api = {
 // Simple in-memory token storage for demo
 let _token = '';
 
+// localStorage key for web
+const TOKEN_STORAGE_KEY = 'jclub_auth_token';
+const AUTO_LOGIN_ENABLED = process.env.EXPO_PUBLIC_AUTO_LOGIN === 'true';
+
+function loadTokenFromStorage(): string {
+    if (typeof window !== 'undefined' && window.localStorage) {
+        return localStorage.getItem(TOKEN_STORAGE_KEY) || '';
+    }
+    return '';
+}
+
+function saveTokenToStorage(token: string) {
+    if (typeof window !== 'undefined' && window.localStorage) {
+        if (token) {
+            localStorage.setItem(TOKEN_STORAGE_KEY, token);
+        } else {
+            localStorage.removeItem(TOKEN_STORAGE_KEY);
+        }
+    }
+}
+
 export function setAuthToken(token: string) {
     _token = token;
+    saveTokenToStorage(token);
 }
 
 async function getToken() {
+    // First check memory
     if (_token) return _token;
+    
+    // Then check localStorage (for web persistence)
+    const storedToken = loadTokenFromStorage();
+    if (storedToken) {
+        _token = storedToken;
+        return _token;
+    }
 
-    // Auto-login if no token is set (Dev/Test mode)
-    if (!_token) {
+    // Auto-login only if explicitly enabled (for development)
+    if (AUTO_LOGIN_ENABLED) {
         console.log("[API] Auto-logging in as user1...");
         try {
             const data = await api.login('local', 'dummy', 'robby.juli@gmail.com', 'Robby Juli', '123456');
@@ -611,5 +641,6 @@ async function getToken() {
             return '';
         }
     }
+    
     return '';
 }

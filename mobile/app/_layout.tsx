@@ -11,9 +11,9 @@ function RootLayoutNav() {
   const colorScheme = useColorScheme();
   const { session, isLoading } = useSession();
 
-  // If loading, show splash or spinner?
+  // If loading, show splash or spinner
   if (isLoading) {
-    return <Slot />;
+    return null; // Or a loading spinner
   }
 
   // If not authenticated, show Login (or handle in screens / use segments)
