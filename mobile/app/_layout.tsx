@@ -1,7 +1,7 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { Stack, Slot } from 'expo-router';
+import { Stack, Slot, useRouter, useRootNavigationState } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import 'react-native-reanimated';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -10,16 +10,33 @@ import { SessionProvider, useSession } from '../ctx';
 function RootLayoutNav() {
   const colorScheme = useColorScheme();
   const { session, isLoading } = useSession();
+  const router = useRouter();
+  const [isReady, setIsReady] = useState(false);
 
-  // If loading, show splash or spinner
-  if (isLoading) {
-    return null; // Or a loading spinner
+  // Wait for session to be ready before deciding which screen to show
+  useEffect(() => {
+    if (!isLoading) {
+      setIsReady(true);
+    }
+  }, [isLoading]);
+
+  // Handle navigation when session changes
+  useEffect(() => {
+    if (isReady && !isLoading) {
+      if (!session) {
+        // Not authenticated, ensure we're on login
+        router.replace('/login');
+      } else {
+        // Authenticated, ensure we're on home (tabs)
+        router.replace('/');
+      }
+    }
+  }, [session, isReady, isLoading]);
+
+  // If still loading or not ready, show nothing (or could show splash)
+  if (isLoading || !isReady) {
+    return null;
   }
-
-  // If not authenticated, show Login (or handle in screens / use segments)
-  // For simplicity, we let the screens handle redirect or just conditionally render here?
-  // Expo Router recommends using a Group for protected routes
-  // But let's just use stack and navigate
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
