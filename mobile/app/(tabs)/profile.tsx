@@ -20,8 +20,13 @@ export default function ProfileScreen() {
 
     useFocusEffect(
         useCallback(() => {
+            if (!session) {
+                // Not logged in, redirect to login
+                router.replace('/login');
+                return;
+            }
             loadProfile();
-        }, [])
+        }, [session])
     );
 
     const loadProfile = async () => {
