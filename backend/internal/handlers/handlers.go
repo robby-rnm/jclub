@@ -357,6 +357,7 @@ func (h *Handler) UpdateTeamMember(c *gin.Context) {
 }
 
 type CreateMatchRequestWithClub struct {
+	IncludeHostAsParticipant bool `json:"include_host_as_participant"`
 	models.CreateMatchRequest
 	ClubID string `json:"club_id" binding:"required"`
 	Status string `json:"status"` // draft or published
@@ -413,7 +414,8 @@ func (h *Handler) CreateMatch(c *gin.Context) {
 		Price:          float64(req.Price),
 		MaxPlayers:     req.MaxPlayers,
 		PositionQuotas: req.PositionQuotas,
-		PositionPrices: req.PositionPrices,
+		PositionPrices:   req.PositionPrices,
+		IncludeHostAsParticipant: req.IncludeHostAsParticipant,
 		Status:         status,
 		CreatedAt:      time.Now(),
 		UpdatedAt:      time.Now(),
@@ -424,19 +426,19 @@ func (h *Handler) CreateMatch(c *gin.Context) {
 		return
 	}
 
-	// Auto-join the creator as a player (Confirmed & Paid)
-	// We use db transaction implicitly or just call create booking.
-	// Ideally run in transaction.
-	booking := &models.Booking{
-		MatchID:   match.ID,
-		UserID:    userID.(string),
-		Position:  models.PositionPlayerFront, // default
-		Status:    models.StatusConfirmed,
-		IsPaid:    true, // Owner is free/paid
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
+	// Auto-join the creator as a player (Confirmed & Paid) if flag is set
+	if req.IncludeHostAsParticipant {
+		booking := &models.Booking{
+			MatchID:   match.ID,
+			UserID:    userID.(string),
+			Position:  models.PositionPlayerFront, // default
+			Status:    models.StatusConfirmed,
+			IsPaid:    true, // Owner is free/paid
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+		}
+		h.Repo.CreateBooking(booking)
 	}
-	h.Repo.CreateBooking(booking)
 
 	c.JSON(http.StatusCreated, match)
 }
@@ -885,6 +887,10 @@ func (h *Handler) ListClubs(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
+	}
+	for i := range clubs {
+		count, _ := h.Repo.GetClubMemberCount(clubs[i].ID)
+		clubs[i].MemberCount = int(count)
 	}
 	c.JSON(http.StatusOK, clubs)
 }
@@ -1375,4 +1381,129 @@ func (h *Handler) GoogleCallback(c *gin.Context) {
 	})
 	tokenString, _ := token.SignedString(middleware.SecretKey)
 	c.Redirect(302, "https://jclubadmin.gsteknologi.com/oauth/callback?token="+tokenString)
+}
+
+// Position Management Handlers
+
+type CreatePositionRequest struct {
+	SportID      string `json:"sport_id" binding:"required"`
+	Code         string `json:"code" binding:"required"`
+	Name         string `json:"name" binding:"required"`
+	DefaultQuota int    `json:"default_quota"`
+}
+
+// AdminCreatePosition - Create new position for a sport
+func (h *Handler) AdminCreatePosition(c *gin.Context) {
+	var req CreatePositionRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	pos := &models.SportPosition{
+		SportID:      req.SportID,
+		Code:         req.Code,
+		Name:         req.Name,
+		DefaultQuota: req.DefaultQuota,
+	}
+
+	if err := h.Repo.CreateSportPosition(pos); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create position: " + err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusCreated, pos)
+}
+
+// AdminGetPositions - Get positions by sport
+func (h *Handler) AdminGetPositions(c *gin.Context) {
+	sportID := c.Query("sport_id")
+	if sportID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "sport_id is required"})
+		return
+	}
+
+	positions, err := h.Repo.GetSportPositions(sportID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get positions: " + err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, positions)
+}
+
+// AdminUpdatePosition - Update a position
+func (h *Handler) AdminUpdatePosition(c *gin.Context) {
+	id := c.Param("id")
+	var req CreatePositionRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	pos, err := h.Repo.GetSportPositionByID(id)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Position not found"})
+		return
+	}
+
+	pos.Code = req.Code
+	pos.Name = req.Name
+	pos.DefaultQuota = req.DefaultQuota
+
+	if err := h.Repo.UpdateSportPosition(pos); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update position: " + err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, pos)
+}
+
+// AdminDeletePosition - Delete a position
+func (h *Handler) AdminDeletePosition(c *gin.Context) {
+	id := c.Param("id")
+
+	if err := h.Repo.DeleteSportPosition(id); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete position: " + err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Position deleted successfully"})
+}
+
+// GetClubMembersWithOwner - Get all club members including the owner
+func (h *Handler) GetClubMembersWithOwner(c *gin.Context) {
+	id := c.Param("id")
+
+	club, err := h.Repo.GetClubByID(id)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Club not found"})
+		return
+	}
+
+	// Get members
+	members, err := h.Repo.GetClubMembers(id)
+	if err != nil {
+		members = []models.ClubMember{}
+	}
+
+	// Include owner as first "member"
+	ownerMember := models.ClubMember{
+		ID:        club.ID + "-owner",
+		ClubID:    club.ID,
+		UserID:    club.CreatorID,
+		User:      club.Creator,
+		Role:      "owner",
+		CreatedAt: club.CreatedAt,
+	}
+
+	// Combine owner + members
+	allParticipants := []models.ClubMember{ownerMember}
+	allParticipants = append(allParticipants, members...)
+
+	c.JSON(http.StatusOK, gin.H{
+		"club":       club,
+		"participants": allParticipants,
+		"total":       len(allParticipants),
+	})
 }

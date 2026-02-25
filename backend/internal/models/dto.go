@@ -13,6 +13,7 @@ type CreateMatchRequest struct {
 	MaxPlayers     int    `json:"max_players" binding:"required"`
 	PositionQuotas string `json:"position_quotas"` // JSON string
 	PositionPrices string `json:"position_prices"` // JSON string
+	IncludeHostAsParticipant bool   `json:"include_host_as_participant"`
 }
 
 type JoinMatchRequest struct {

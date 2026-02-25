@@ -39,6 +39,7 @@ export default function CreateGroupScreen() {
     const [selectedSport, setSelectedSport] = useState<any>(null);
     const [positionQuotas, setPositionQuotas] = useState<{ [key: string]: string }>({});
     const [isCustomPrice, setIsCustomPrice] = useState(false);
+    const [includeHostAsParticipant, setIncludeHostAsParticipant] = useState(false);
     const [positionPrices, setPositionPrices] = useState<{ [key: string]: string }>({});
 
     useEffect(() => {
@@ -186,7 +187,8 @@ export default function CreateGroupScreen() {
                 position_prices: JSON.stringify(prices),
                 date: date.toISOString().split('T')[0],
                 time: time.toTimeString().split(' ')[0].substring(0, 5),
-                status: status
+                status: status,
+                include_host_as_participant: includeHostAsParticipant
             });
             alert(status === 'draft' ? "Draft Saved!" : "Match Published!");
             router.back();
@@ -446,6 +448,20 @@ export default function CreateGroupScreen() {
                                 value={isCustomPrice}
                             />
                         </View>
+                    </View>
+
+                    {/* Host sebagai Peserta */}
+                    <View style={[styles.formGroup, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 12 }]}>
+                        <View style={{ flex: 1 }}>
+                            <Text style={{ fontSize: 14, fontWeight: '600', color: '#1C1C1E' }}>Saya Sebagai Peserta</Text>
+                            <Text style={{ fontSize: 12, color: '#757575', marginTop: 2 }}>Host/Pemilik club masuk sebagai peserta</Text>
+                        </View>
+                        <Switch
+                            trackColor={{ false: "#767577", true: PRIMARY_GREEN }}
+                            thumbColor={"#f4f3f4"}
+                            onValueChange={(val) => setIncludeHostAsParticipant(val)}
+                            value={includeHostAsParticipant}
+                        />
                     </View>
 
                     {/* Total Slot Pemain */}

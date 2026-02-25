@@ -44,6 +44,7 @@ export default function EditMatchScreen() {
     const [originalMatch, setOriginalMatch] = useState<any>(null);
 
     const [status, setStatus] = useState('published');
+    const [includeHostAsParticipant, setIncludeHostAsParticipant] = useState(false);
     const [rescheduleReason, setRescheduleReason] = useState('');
 
     useEffect(() => {
@@ -76,6 +77,7 @@ export default function EditMatchScreen() {
             setTime(timeObj);
 
             setRescheduleReason(matchData.reschedule_reason || '');
+            setIncludeHostAsParticipant(matchData.include_host_as_participant || false);
 
             // Populate Complex State (Quotas & Prices)
             if (matchData.position_quotas) {
@@ -229,7 +231,8 @@ export default function EditMatchScreen() {
                 date: date.toISOString().split('T')[0],
                 time: time.toTimeString().split(' ')[0].substring(0, 5),
                 status: finalStatus,
-                reschedule_reason: rescheduleReason
+                reschedule_reason: rescheduleReason,
+                include_host_as_participant: includeHostAsParticipant
             };
 
             await api.updateMatch(id as string, updateData);
@@ -465,6 +468,20 @@ export default function EditMatchScreen() {
                                 disabled={isRestricted}
                             />
                         </View>
+                    </View>
+
+                    {/* Host sebagai Peserta */}
+                    <View style={[styles.formGroup, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 12 }]}>
+                        <View style={{ flex: 1 }}>
+                            <Text style={{ fontSize: 14, fontWeight: '600', color: '#1C1C1E' }}>Saya Sebagai Peserta</Text>
+                            <Text style={{ fontSize: 12, color: '#757575', marginTop: 2 }}>Host/Pemilik club masuk sebagai peserta</Text>
+                        </View>
+                        <Switch
+                            trackColor={{ false: "#767577", true: PRIMARY_GREEN }}
+                            thumbColor={"#f4f3f4"}
+                            onValueChange={(val) => setIncludeHostAsParticipant(val)}
+                            value={includeHostAsParticipant}
+                        />
                     </View>
 
                     {/* Total Slot Pemain */}

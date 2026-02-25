@@ -110,6 +110,7 @@ type Match struct {
 	CancelReason     string    `json:"cancel_reason"`
 	PositionQuotas   string    `json:"position_quotas"` // JSON: {"gk": 2, "player_front": 5}
 	PositionPrices   string    `json:"position_prices"`
+	IncludeHostAsParticipant bool      `gorm:"default:false" json:"include_host_as_participant"`
 	CreatedAt        time.Time `json:"created_at"`
 	UpdatedAt        time.Time `json:"updated_at"`
 	Bookings         []Booking `gorm:"foreignKey:MatchID" json:"bookings"`
