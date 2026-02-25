@@ -7,6 +7,7 @@ import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { useState, useEffect } from 'react';
 import { api } from '@/services/api';
+import { useAuth } from '@/ctx';
 
 const PRIMARY_GREEN = '#3E8E41';
 const LIGHT_BG = '#FAFAFA';
@@ -42,6 +43,7 @@ export default function EditMatchScreen() {
 
     // Original Data (for change detection or reference)
     const [originalMatch, setOriginalMatch] = useState<any>(null);
+    const { user: currentUser } = useAuth();
 
     const [status, setStatus] = useState('published');
     const [includeHostAsParticipant, setIncludeHostAsParticipant] = useState(false);
@@ -635,13 +637,15 @@ export default function EditMatchScreen() {
                         </TouchableOpacity>
                     )}
 
-                    <TouchableOpacity
-                        style={[styles.createButton, { backgroundColor: '#FFEBEE', marginTop: 4 }]}
-                        onPress={handleCancel}
-                        disabled={saving}
-                    >
-                        <Text style={[styles.createButtonText, { color: '#D32F2F' }]}>Cancel Match</Text>
-                    </TouchableOpacity>
+                    {originalMatch?.creator_id === currentUser?.id && (
+                        <TouchableOpacity
+                            style={[styles.createButton, { backgroundColor: '#FFEBEE', marginTop: 4 }]}
+                            onPress={handleCancel}
+                            disabled={saving}
+                        >
+                            <Text style={[styles.createButtonText, { color: '#D32F2F' }]}>Cancel Match</Text>
+                        </TouchableOpacity>
+                    )}
                 </View>
             </SafeAreaView >
         </View >
