@@ -51,6 +51,13 @@ type Repository interface {
 	UpdateTeamMember(memberID string, newTeamID string) error
 	GetMasterSports() ([]models.Sport, error)
 
+	// SportPosition Methods
+	CreateSportPosition(pos *models.SportPosition) error
+	GetSportPositions(sportID string) ([]models.SportPosition, error)
+	GetSportPositionByID(id string) (*models.SportPosition, error)
+	UpdateSportPosition(pos *models.SportPosition) error
+	DeleteSportPosition(id string) error
+
 	// Club Methods
 	CreateClub(club *models.Club) error
 	GetClubs(page, limit int, search string, userID string, filterType string) ([]models.Club, error)
@@ -130,7 +137,7 @@ func (r *repository) GetClubMember(userID, clubID string) (*models.ClubMember, e
 
 func (r *repository) GetClubByID(id string) (*models.Club, error) {
 	var club models.Club
-	err := r.db.Preload("Creator").First(&club, "id = ?", id).Error
+	err := r.db.Preload("Creator").Preload("Members").Preload("Members.User").First(&club, "id = ?", id).Error
 	return &club, err
 }
 
@@ -141,6 +148,14 @@ func (r *repository) UpdateClub(club *models.Club) error {
 func (r *repository) DeleteClub(clubID string) error {
 	// Delete in transaction to ensure consistency
 	return r.db.Transaction(func(tx *gorm.DB) error {
+		// Delete all bookings for matches in this club first
+		if err := tx.Exec("DELETE FROM bookings WHERE match_id IN (SELECT id FROM matches WHERE club_id = ?)", clubID).Error; err != nil {
+			return err
+		}
+		// Delete all matches
+		if err := tx.Where("club_id = ?", clubID).Delete(&models.Match{}).Error; err != nil {
+			return err
+		}
 		// Delete all club members
 		if err := tx.Where("club_id = ?", clubID).Delete(&models.ClubMember{}).Error; err != nil {
 			return err
@@ -223,6 +238,34 @@ func (r *repository) GetMasterSports() ([]models.Sport, error) {
 	return sports, err
 }
 
+
+// SportPosition Methods
+func (r *repository) CreateSportPosition(pos *models.SportPosition) error {
+	return r.db.Create(pos).Error
+}
+
+func (r *repository) GetSportPositions(sportID string) ([]models.SportPosition, error) {
+	var positions []models.SportPosition
+	err := r.db.Where("sport_id = ?", sportID).Find(&positions).Error
+	return positions, err
+}
+
+func (r *repository) GetSportPositionByID(id string) (*models.SportPosition, error) {
+	var pos models.SportPosition
+	err := r.db.First(&pos, "id = ?", id).Error
+	if err != nil {
+		return nil, err
+	}
+	return &pos, nil
+}
+
+func (r *repository) UpdateSportPosition(pos *models.SportPosition) error {
+	return r.db.Save(pos).Error
+}
+
+func (r *repository) DeleteSportPosition(id string) error {
+	return r.db.Delete(&models.SportPosition{}, "id = ?", id).Error
+}
 func (r *repository) FixData() error {
 	// Use a valid UUID for the test user to satisfy Postgres strict type checks
 	// This UUID should match what is used in Handlers fallback
