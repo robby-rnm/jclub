@@ -97,7 +97,8 @@ func main() {
 			protected.POST("/clubs", handler.CreateClub)              // Create Club
 			protected.POST("/matches", handler.CreateMatch)           // Create Match (Schedule)
 			protected.PUT("/matches/:id", handler.UpdateMatch)        // Reschedule / Edit (Draft)
-			protected.PUT("/matches/:id/cancel", handler.CancelMatch) // Cancel Match
+			protected.PUT("/matches/:id/cancel", handler.CancelMatch)
+		protected.DELETE("/matches/:id", handler.DeleteMatch) // Cancel Match
 			protected.POST("/matches/:id/teams/generate", handler.GenerateTeams)
 			protected.PUT("/teams/members/:memberId", handler.UpdateTeamMember) // Manual move
 			protected.POST("/bookings", handler.JoinMatch)

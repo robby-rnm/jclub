@@ -715,6 +715,35 @@ func (h *Handler) CancelMatch(c *gin.Context) {
 }
 
 // JoinMatch
+// DeleteMatch - Soft delete match (only creator can delete)
+func (h *Handler) DeleteMatch(c *gin.Context) {
+	id := c.Param("id")
+	userID, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	match, err := h.Repo.GetMatchByID(id)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Match not found"})
+		return
+	}
+
+	// Only creator can delete match
+	if match.CreatorID != userID.(string) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Only creator can delete match"})
+		return
+	}
+
+	// Soft delete
+	if err := h.Repo.SoftDeleteMatch(id); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Match deleted successfully"})
+}
 func (h *Handler) JoinMatch(c *gin.Context) {
 	var req models.JoinMatchRequest
 	if err := c.ShouldBindJSON(&req); err != nil {

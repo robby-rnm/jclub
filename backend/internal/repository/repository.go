@@ -33,6 +33,7 @@ type Repository interface {
 	GetMatchByID(id string) (*models.Match, error)
 	GetMatchByIDLock(id string) (*models.Match, error) // For Locking
 	UpdateMatch(match *models.Match) error
+SoftDeleteMatch(matchID string) error
 
 	CreateBooking(booking *models.Booking) error
 	GetBookingsByMatchID(matchID string) ([]models.Booking, error)
@@ -334,7 +335,7 @@ func (r *repository) ListMatches(filter MatchFilter) ([]models.Match, error) {
 	now := time.Now()
 	startOfDay := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
 
-	query := r.db.Preload("Bookings").Preload("Creator").Preload("Club").Order("date ASC")
+	query := r.db.Preload("Bookings").Preload("Creator").Preload("Club").Where("is_active = ?", true).Order("date ASC")
 
 	// Only filter by date if looking for public matches (browsing)
 	// If filtering by "My Created" or "My Joined", show history too.
@@ -451,6 +452,19 @@ func (r *repository) GetMatchByIDLock(id string) (*models.Match, error) {
 	// We just need the Match QUOTA info.
 	err := r.db.Clauses(clause.Locking{Strength: "UPDATE"}).First(&match, "id = ?", id).Error
 	return &match, err
+}
+
+
+func (r *repository) SoftDeleteMatch(matchID string) error {
+	// Soft delete: set is_active to false
+	if err := r.db.Model(&models.Match{}).Where("id = ?", matchID).Update("is_active", false).Error; err != nil {
+		return err
+	}
+	// Soft delete all bookings for this match
+	if err := r.db.Model(&models.Booking{}).Where("match_id = ?", matchID).Update("is_active", false).Error; err != nil {
+		return err
+	}
+	return nil
 }
 
 func (r *repository) UpdateMatch(match *models.Match) error {

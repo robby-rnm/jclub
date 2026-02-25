@@ -389,6 +389,21 @@ export const api = {
             throw new Error(err || 'Failed to cancel match');
         }
         return res.json();
+    }
+
+    async deleteMatch(id: string): Promise<any> {
+        const token = await getToken();
+        const res = await fetch(`${API_URL}/matches/${id}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            },
+        });
+        if (!res.ok) {
+            const err = await res.text();
+            throw new Error(err || 'Failed to delete match');
+        }
+        return res.json();
     },
 
     async joinMatch(matchId: string, position: string = 'player_front'): Promise<any> {

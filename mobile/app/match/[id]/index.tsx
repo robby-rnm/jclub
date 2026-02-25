@@ -6,6 +6,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons, MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { useState, useEffect } from 'react';
+import { Alert } from 'react-native';
 import { api } from '@/services/api';
 
 const PRIMARY_GREEN = '#3E8E41';
@@ -21,6 +22,35 @@ export default function MatchDetailScreen() {
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
     const [currentUser, setCurrentUser] = useState<any>(null);
     const [teams, setTeams] = useState<any[]>([]);
+    const [deleting, setDeleting] = useState(false);
+
+    const handleDeleteMatch = async () => {
+        Alert.alert(
+            "Hapus Match",
+            "Yakin ingin menghapus match ini? Semua peserta akan dihapus.",
+            [
+                { text: "Batal", style: "cancel" },
+                {
+                    text: "Hapus",
+                    style: "destructive",
+                    onPress: async () => {
+                        setDeleting(true);
+                        try {
+                            await api.deleteMatch(id as string);
+                            Alert.alert("Berhasil", "Match dihapus", [
+                                { text: "OK", onPress: () => router.replace("/(tabs)/group") }
+                            ]);
+                        } catch (e: any) {
+                            Alert.alert("Gagal", e.message);
+                        } finally {
+                            setDeleting(false);
+                        }
+                    }
+                }
+            ]
+        );
+    };
+
 
     useEffect(() => {
         if (!id) return;
@@ -287,6 +317,10 @@ export default function MatchDetailScreen() {
 
                             <TouchableOpacity style={[styles.listButton, { marginTop: 12, borderColor: '#F57C00' }]} onPress={() => router.push(`/match/${id}/edit`)}>
                                 <Text style={[styles.listButtonText, { color: '#F57C00' }]}>Edit Match (Host)</Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity style={[styles.listButton, { marginTop: 12, borderColor: #FF9800 }]} onPress={() => router.push(`/match/${id}/reschedule`)}>
+                                <Text style={[styles.listButtonText, { color: #FF9800 }]}>Reschedule (JadwalUlang)</Text>
                             </TouchableOpacity>
                         </>
                     )}
