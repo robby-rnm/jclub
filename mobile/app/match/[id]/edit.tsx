@@ -60,7 +60,7 @@ export default function EditMatchScreen() {
                 const userData = await api.getProfile();
                 setCurrentUser(userData);
             } catch (e) {
-                console.error(Failed to load user, e);
+                console.error("Failed to load user", e);
             }
 
             const [sportsData, matchData] = await Promise.all([
