@@ -1320,7 +1320,7 @@ func (h *Handler) LeaveClub(c *gin.Context) {
 	// Check if creator (optional: prevent creator from leaving without transfer)
 	club, err := h.Repo.GetClubByID(clubID)
 	if err == nil && club.CreatorID == userID.(string) {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Creator cannot leave the club. Delete club instead."})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Pemilik club tidak dapat keluar. Silakan hapus club atau transfer kepemilikan."})
 		return
 	}
 

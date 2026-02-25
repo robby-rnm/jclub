@@ -70,6 +70,10 @@ func main() {
 	{
 		admin.GET("/users", handler.AdminGetAllUsers)
 		admin.GET("/sports", handler.GetMasterSports)
+		admin.POST("/positions", handler.AdminCreatePosition)
+		admin.GET("/positions", handler.AdminGetPositions)
+		admin.PUT("/positions/:id", handler.AdminUpdatePosition)
+		admin.DELETE("/positions/:id", handler.AdminDeletePosition)
 	}
 
 	// OAuth
@@ -106,6 +110,7 @@ func main() {
 
 			// Club Membership
 			protected.PUT("/clubs/:id", handler.UpdateClub)
+		protected.GET("/clubs/:id/members", handler.GetClubMembersWithOwner)
 			protected.GET("/clubs/:id/announcements/manage", handler.ListAllClubAnnouncements)
 			protected.DELETE("/clubs/:id", handler.DeleteClub)
 			protected.POST("/clubs/:id/join", handler.JoinClub)

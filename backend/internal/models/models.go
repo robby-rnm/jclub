@@ -50,6 +50,7 @@ type Club struct {
 	Description string       `json:"description"`
 	Logo        string       `json:"logo"` // URL or path
 	CreatorID   string       `gorm:"index" json:"creator_id"`
+	IsActive    bool         `gorm:"default:true" json:"is_active"`
 	Creator     User         `gorm:"foreignKey:CreatorID" json:"creator"`
 	Members     []ClubMember `gorm:"foreignKey:ClubID" json:"members"`
 	SocialMedia string       `json:"social_media"` // JSON string: {"instagram": "...", "facebook": "..."}
@@ -65,6 +66,7 @@ type Announcement struct {
 	Title     string    `json:"title"`
 	Content   string    `json:"content"`
 	Status    string    `gorm:"default:'draft'" json:"status"` // draft, published
+	IsActive    bool         `gorm:"default:true" json:"is_active"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 }
@@ -87,6 +89,7 @@ type ClubMember struct {
 	UserID    string    `gorm:"index" json:"user_id"`
 	User      User      `gorm:"foreignKey:UserID" json:"user"`
 	Role      string    `json:"role"` // admin, member
+	IsActive    bool         `gorm:"default:true" json:"is_active"`
 	CreatedAt time.Time `json:"created_at"`
 }
 
@@ -111,6 +114,7 @@ type Match struct {
 	PositionQuotas   string    `json:"position_quotas"` // JSON: {"gk": 2, "player_front": 5}
 	PositionPrices   string    `json:"position_prices"`
 	IncludeHostAsParticipant bool      `gorm:"default:false" json:"include_host_as_participant"`
+	IsActive           bool      `gorm:"default:true" json:"is_active"`
 	CreatedAt        time.Time `json:"created_at"`
 	UpdatedAt        time.Time `json:"updated_at"`
 	Bookings         []Booking `gorm:"foreignKey:MatchID" json:"bookings"`

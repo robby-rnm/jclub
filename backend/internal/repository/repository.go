@@ -126,7 +126,8 @@ func (r *repository) JoinClub(member *models.ClubMember) error {
 }
 
 func (r *repository) LeaveClub(userID, clubID string) error {
-	return r.db.Delete(&models.ClubMember{}, "user_id = ? AND club_id = ?", userID, clubID).Error
+	// Soft delete: set is_active to false
+	return r.db.Model(&models.ClubMember{}).Where("user_id = ? AND club_id = ?", userID, clubID).Update("is_active", false).Error
 }
 
 func (r *repository) GetClubMember(userID, clubID string) (*models.ClubMember, error) {
@@ -146,26 +147,22 @@ func (r *repository) UpdateClub(club *models.Club) error {
 }
 
 func (r *repository) DeleteClub(clubID string) error {
-	// Delete in transaction to ensure consistency
+	// Soft delete: set is_active to false
 	return r.db.Transaction(func(tx *gorm.DB) error {
-		// Delete all bookings for matches in this club first
-		if err := tx.Exec("DELETE FROM bookings WHERE match_id IN (SELECT id FROM matches WHERE club_id = ?)", clubID).Error; err != nil {
+		// Soft delete club
+		if err := tx.Model(&models.Club{}).Where("id = ?", clubID).Update("is_active", false).Error; err != nil {
 			return err
 		}
-		// Delete all matches
-		if err := tx.Where("club_id = ?", clubID).Delete(&models.Match{}).Error; err != nil {
+		// Soft delete all club members
+		if err := tx.Model(&models.ClubMember{}).Where("club_id = ?", clubID).Update("is_active", false).Error; err != nil {
 			return err
 		}
-		// Delete all club members
-		if err := tx.Where("club_id = ?", clubID).Delete(&models.ClubMember{}).Error; err != nil {
+		// Soft delete all announcements
+		if err := tx.Model(&models.Announcement{}).Where("club_id = ?", clubID).Update("is_active", false).Error; err != nil {
 			return err
 		}
-		// Delete all announcements
-		if err := tx.Where("club_id = ?", clubID).Delete(&models.Announcement{}).Error; err != nil {
-			return err
-		}
-		// Delete the club itself
-		if err := tx.Delete(&models.Club{}, "id = ?", clubID).Error; err != nil {
+		// Soft delete all matches
+		if err := tx.Model(&models.Match{}).Where("club_id = ?", clubID).Update("is_active", false).Error; err != nil {
 			return err
 		}
 		return nil
@@ -204,7 +201,7 @@ func (r *repository) DeleteAnnouncement(id string) error {
 
 func (r *repository) GetClubMembers(clubID string) ([]models.ClubMember, error) {
 	var members []models.ClubMember
-	err := r.db.Preload("User").Where("club_id = ?", clubID).Find(&members).Error
+	err := r.db.Preload("User").Where("club_id = ? AND is_active = ?", clubID, true).Find(&members).Error
 	return members, err
 }
 
