@@ -7,7 +7,7 @@ import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { useState, useEffect } from 'react';
 import { api } from '@/services/api';
-import { useAuth } from '@/ctx';
+
 
 const PRIMARY_GREEN = '#3E8E41';
 const LIGHT_BG = '#FAFAFA';
@@ -43,7 +43,7 @@ export default function EditMatchScreen() {
 
     // Original Data (for change detection or reference)
     const [originalMatch, setOriginalMatch] = useState<any>(null);
-    const { user: currentUser } = useAuth();
+    const [currentUser, setCurrentUser] = useState<any>(null);
 
     const [status, setStatus] = useState('published');
     const [includeHostAsParticipant, setIncludeHostAsParticipant] = useState(false);
@@ -55,6 +55,14 @@ export default function EditMatchScreen() {
 
     const loadData = async () => {
         try {
+            // Fetch current user
+            try {
+                const userData = await api.getProfile();
+                setCurrentUser(userData);
+            } catch (e) {
+                console.error(Failed to load user, e);
+            }
+
             const [sportsData, matchData] = await Promise.all([
                 api.getSports(),
                 api.getMatch(id as string)
