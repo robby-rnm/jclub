@@ -102,7 +102,7 @@ func (r *repository) CreateClub(club *models.Club) error {
 
 func (r *repository) GetClubs(page, limit int, search string, userID string, filterType string) ([]models.Club, error) {
 	var clubs []models.Club
-	query := r.db.Preload("Creator").Order("created_at DESC")
+	query := r.db.Preload("Creator").Where("is_active = ?", true).Order("created_at DESC")
 
 	if search != "" {
 		searchPattern := "%" + search + "%"
