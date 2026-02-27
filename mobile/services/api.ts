@@ -389,7 +389,7 @@ export const api = {
             throw new Error(err || 'Failed to cancel match');
         }
         return res.json();
-    }
+    },
 
     async deleteMatch(id: string): Promise<any> {
         const token = await getToken();
@@ -601,7 +601,7 @@ export const api = {
             throw new Error(err.error || 'Login failed');
         }
         return res.json();
-    }
+    },
 };
 
 // Simple in-memory token storage for demo

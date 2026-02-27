@@ -319,8 +319,8 @@ export default function MatchDetailScreen() {
                                 <Text style={[styles.listButtonText, { color: '#F57C00' }]}>Edit Match (Host)</Text>
                             </TouchableOpacity>
 
-                            <TouchableOpacity style={[styles.listButton, { marginTop: 12, borderColor: #FF9800 }]} onPress={() => router.push(`/match/${id}/reschedule`)}>
-                                <Text style={[styles.listButtonText, { color: #FF9800 }]}>Reschedule (JadwalUlang)</Text>
+                            <TouchableOpacity style={[styles.listButton, { marginTop: 12, borderColor: "#FF9800" }]} onPress={() => router.push(`/match/${id}/reschedule`)}>
+                                <Text style={[styles.listButtonText, { color: "#FF9800" }]}>Reschedule (JadwalUlang)</Text>
                             </TouchableOpacity>
                         </>
                     )}
