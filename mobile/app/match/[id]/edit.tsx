@@ -319,7 +319,7 @@ export default function EditMatchScreen() {
                     <View style={{ backgroundColor: '#FFF3E0', padding: 12, borderRadius: 8, marginBottom: 16, flexDirection: 'row', alignItems: 'center' }}>
                         <Ionicons name="information-circle" size={20} color="#E65100" style={{ marginRight: 8 }} />
                         <Text style={{ color: '#E65100', fontSize: 13, flex: 1 }}>
-                            Match is Published. Only date, time, and reason can be edited.
+                            Match sudah Published. Field date, time, dan reason bisa diedit.
                         </Text>
                     </View>
                 )}
