@@ -122,7 +122,7 @@ export default function EditMatchScreen() {
 
         } catch (e) {
             console.error(e);
-            Alert.alert("Error", "Failed to load match details");
+            Alert.alert("Error", "Gagal memuat detail match");
             router.push(`/club/${clubId}`);
         } finally {
             setLoading(false);
@@ -183,7 +183,7 @@ export default function EditMatchScreen() {
 
     const handleSave = async (targetStatus?: string) => {
         if (!name || !location) {
-            Alert.alert("Error", "Please fill all fields");
+            Alert.alert("Error", "Mohon isi semua kolom");
             return;
         }
 
@@ -261,7 +261,7 @@ const isPublished = status === 'published' || status === 'open';
             Alert.alert("Success", targetStatus === 'published' ? "Match Published!" : "Match Updated!");
             router.push(`/club/${clubId}`);
         } catch (e: any) {
-            Alert.alert("Error", e.message || "Failed to update");
+            Alert.alert("Error", e.message || "Gagal memperbarui");
         } finally {
             setSaving(false);
         }
@@ -269,7 +269,7 @@ const isPublished = status === 'published' || status === 'open';
 
     const handleCancel = async () => {
         Alert.alert(
-            "Cancel Match",
+            "Batalkan Match",
             "Are you sure you want to cancel this match? This action cannot be undone.",
             [
                 { text: "No", style: "cancel" },
@@ -341,7 +341,7 @@ const isPublished = status === 'published' || status === 'open';
                     <View style={{ backgroundColor: '#FFF3E0', padding: 12, borderRadius: 8, marginBottom: 16, flexDirection: 'row', alignItems: 'center' }}>
                         <Ionicons name="information-circle" size={20} color="#E65100" style={{ marginRight: 8 }} />
                         <Text style={{ color: '#E65100', fontSize: 13, flex: 1 }}>
-                            Match sudah Published. Field date, time, dan reason bisa diedit.
+                            Match sudah dipublish. Field date, time, dan reason bisa diedit.
                         </Text>
                     </View>
                 )}
@@ -673,7 +673,7 @@ const isPublished = status === 'published' || status === 'open';
                             onPress={handleCancel}
                             disabled={saving}
                         >
-                            <Text style={[styles.createButtonText, { color: '#D32F2F' }]}>Cancel Match</Text>
+                            <Text style={[styles.createButtonText, { color: '#D32F2F' }]}>Batalkan Match</Text>
                         </TouchableOpacity>
                     )}
                 </View>

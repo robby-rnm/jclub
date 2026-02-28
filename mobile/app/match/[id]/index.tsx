@@ -82,7 +82,7 @@ export default function MatchDetailScreen() {
     if (loading) {
         return (
             <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
-                <Text style={{ color: '#757575' }}>Loading...</Text>
+                <Text style={{ color: '#757575' }}>Memuat...</Text>
             </View>
         );
     }
@@ -96,7 +96,7 @@ export default function MatchDetailScreen() {
                     ID: {id}
                 </Text>
                 <Text style={{ color: '#D32F2F', textAlign: 'center', marginTop: 8 }}>
-                    Error: {errorMsg || "Match not found"}
+                    Error: {errorMsg || "Match tidak ditemukan"}
                 </Text>
                 <TouchableOpacity onPress={() => router.replace('/(tabs)/group')} style={{ marginTop: 24, padding: 12, backgroundColor: '#E0E0E0', borderRadius: 8 }}>
                     <Text>Kembali ke List</Text>
@@ -144,10 +144,10 @@ export default function MatchDetailScreen() {
                         <View style={{ flex: 1 }}>
                             <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
                                 <View style={[styles.statusTag, { backgroundColor: '#E3F2FD', marginRight: 8, paddingHorizontal: 8, paddingVertical: 4 }]}>
-                                    <Text style={[styles.statusText, { color: '#1976D2', fontSize: 10 }]}>{match.game_type || 'Activity'}</Text>
+                                    <Text style={[styles.statusText, { color: '#1976D2', fontSize: 10 }]}>{match.game_type || 'Aktivitas'}</Text>
                                 </View>
                                 <View style={styles.statusTag}>
-                                    <Text style={styles.statusText}>Open Slot</Text>
+                                    <Text style={styles.statusText}>Slot Terbuka</Text>
                                 </View>
                             </View>
                             <Text style={styles.matchTitle}>{match.title}</Text>
@@ -237,7 +237,7 @@ export default function MatchDetailScreen() {
                                                 </Text>
                                             </View>
                                             <Text style={[styles.playerText, member.user.id === currentUser?.id && { fontWeight: '700', color: PRIMARY_GREEN }]}>
-                                                {member.user.name} {member.user.id === currentUser?.id && '(You)'}
+                                                {member.user.name} {member.user.id === currentUser?.id && '(Kamu)'}
                                             </Text>
                                         </View>
                                     ))}

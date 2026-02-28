@@ -35,7 +35,7 @@ export default function Register() {
         setLoading(true);
         try {
             await api.register({ name, email, password });
-            Alert.alert('Success', 'Registration successful! Please login.', [
+            Alert.alert('Sukses', 'Pendaftaran berhasil! Silakan login.', [
                 { text: 'OK', onPress: () => router.back() }
             ]);
         } catch (e: any) {
@@ -59,7 +59,7 @@ export default function Register() {
                         <Text style={styles.label}>Nama</Text>
                         <TextInput
                             style={styles.input}
-                            placeholder="Full Nama"
+                            placeholder="Nama lengkap"
                             value={name}
                             onChangeText={setNama}
                         />
@@ -105,7 +105,7 @@ export default function Register() {
                         </TouchableOpacity>
 
                         <TouchableOpacity onPress={() => router.back()} style={styles.loginLink}>
-                            <Text style={styles.loginLinkText}>Already have an account? Login</Text>
+                            <Text style={styles.loginLinkText}>Sudah punya akun? Masuk</Text>
                         </TouchableOpacity>
                     </View>
 

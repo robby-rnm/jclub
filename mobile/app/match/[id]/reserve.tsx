@@ -102,7 +102,7 @@ export default function ReserveSlotScreen() {
 
         } catch (e) {
             console.error("Failed to load data", e);
-            alert("Failed to load match data");
+            alert("Gagal memuat data match");
         }
     };
 
@@ -142,7 +142,7 @@ export default function ReserveSlotScreen() {
                     <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
                         <Ionicons name="arrow-back" size={24} color="#000" />
                     </TouchableOpacity>
-                    <Text style={styles.headerTitle}>Reserve Slot</Text>
+                    <Text style={styles.headerTitle}>Reservasi Slot</Text>
                     <View style={{ width: 40 }} />
                 </View>
             </SafeAreaView>
@@ -212,7 +212,7 @@ export default function ReserveSlotScreen() {
                                             {positionNames[code] || code.toUpperCase()}
                                         </Text>
                                         <Text style={{ fontSize: 10, color: isFull ? '#E57373' : '#9E9E9E' }}>
-                                            {isFull ? 'FULL' : `${count}/${quota}`}
+                                            {isFull ? 'PENUH' : `${count}/${quota}`}
                                         </Text>
                                     </View>
                                 </TouchableOpacity>
