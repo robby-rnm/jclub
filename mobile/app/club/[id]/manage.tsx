@@ -20,8 +20,8 @@ export default function ManageClubScreen() {
     const [logo, setLogo] = useState('');
     const [instagram, setInstagram] = useState('');
 
-    const [loading, setLoading] = useState(false);
-    const [initialLoading, setInitialLoading] = useState(true);
+    const [loading, setMemuat... useState(false);
+    const [initialMemuat...etInitialMemuat... useState(true);
 
     useEffect(() => {
         loadClubData();
@@ -46,15 +46,15 @@ export default function ManageClubScreen() {
                 } catch (e) { console.error("Social parse error", e); }
             }
         } catch (e) {
-            Alert.alert('Error', 'Gagal memuat data club');
+            Alert.alert('Kesalahan', 'Gagal memuat data club');
             router.back();
         } finally {
-            setInitialLoading(false);
+            setInitialMemuat...lse);
         }
     };
 
     const handleUpdateClub = async () => {
-        setLoading(true);
+        setMemuat...ue);
         try {
             const socialMedia = JSON.stringify({ instagram });
             await api.updateClub(id as string, {
@@ -65,9 +65,9 @@ export default function ManageClubScreen() {
             });
             Alert.alert('Sukses', 'Data club diperbarui');
         } catch (e: any) {
-            Alert.alert('Error', e.message);
+            Alert.alert('Kesalahan', e.message);
         } finally {
-            setLoading(false);
+            setMemuat...lse);
         }
     };
 
@@ -90,7 +90,7 @@ export default function ManageClubScreen() {
     };
 
     const uploadLogo = async (uri: string) => {
-        setLoading(true);
+        setMemuat...ue);
         try {
             const uploadedUrl = await api.uploadClubLogo(uri);
             setLogo(uploadedUrl);
@@ -108,11 +108,11 @@ export default function ManageClubScreen() {
         } catch (e: any) {
             Alert.alert("Upload Gagal", e.message);
         } finally {
-            setLoading(false);
+            setMemuat...lse);
         }
     };
 
-    if (initialLoading) return <View style={styles.center}><Text>Loading...</Text></View>;
+    if (initialMemuat...eturn <View style={styles.center}><Text>Memuat...</Text></View>;
 
     return (
         <View style={styles.container}>
