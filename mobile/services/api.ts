@@ -64,7 +64,8 @@ export interface Club {
 }
 
 export interface GetClubResponse {
-    club: Club;
+    club?: Club;
+    include_host_as_participant?: boolean;
     member_count: number;
 }
 
@@ -81,6 +82,7 @@ export interface CreateMatchRequest {
     position_quotas?: string; // JSON string
     position_prices?: string; // JSON string
     status?: string; // 'draft' | 'published'
+    include_host_as_participant?: boolean;
 }
 
 export interface PositionMaster {

@@ -93,7 +93,7 @@ export default function ParticipantListScreen() {
     };
 
     // Owner logic
-    const creatorId = matchDetails?.creator?.id || matchDetails?.creator_id;
+    const creatorId = matchDetails?.creator?.id || matchDetails?.creator?.id;
     const isOwner = creatorId && currentUser?.id === creatorId;
     const canManage = isOwner;
 
@@ -156,7 +156,7 @@ export default function ParticipantListScreen() {
                                 <Text style={{ fontSize: 10, color: '#616161' }}>You</Text>
                             </View>
                         )}
-                        {(matchDetails?.creator_id === itemUserId) && (
+                        {(matchDetails?.creator?.id === itemUserId) && (
                             <View style={styles.hostTag}>
                                 <Text style={styles.hostTagText}>Host</Text>
                             </View>

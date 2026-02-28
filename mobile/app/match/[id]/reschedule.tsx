@@ -25,9 +25,9 @@ export default function RescheduleScreen() {
     useEffect(() => {
         if (id) {
             api.getMatch(id as string).then(m => {
-                setDate(new Date(m.Date));
-                setTime(new Date(m.Date));
-                if (m.RescheduleReason) setReason(m.RescheduleReason);
+                setDate(new Date(new Date(m.date)));
+                setTime(new Date(new Date(m.date)));
+                if (m.reschedule_reason) setReason(m.reschedule_reason);
             });
         }
     }, [id]);

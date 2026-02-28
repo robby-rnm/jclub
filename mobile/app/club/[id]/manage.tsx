@@ -34,11 +34,11 @@ export default function ManageClubScreen() {
             const club = data.club || data; // Handle both old/new structure if transition
             console.log("Manage Club Data Loaded:", club);
 
-            setName(club.Name || club.name || '');
-            setDescription(club.Description || club.description || '');
-            setLogo(club.Logo || club.logo || '');
+            setName(club.name || club.name || '');
+            setDescription(club.description || club.description || '');
+            setLogo(club.logo || club.logo || '');
 
-            const socialMediaStr = club.SocialMedia || club.social_media;
+            const socialMediaStr = club.social_media || club.social_media;
             if (socialMediaStr) {
                 try {
                     const socials = JSON.parse(socialMediaStr);
