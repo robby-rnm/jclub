@@ -46,7 +46,7 @@ export default function MatchesScreen() {
     const fetchMatches = async () => {
         try {
             // Fetch matches (default filter checks date >= today)
-            const sportName = selectedSport ? sports.find(s => s.code === selectedSport)?.name : '';
+            const sportName = selectedSport ? sports.find(s => s.code === selectedSport)?.name : undefined;
             const data = await api.getMatches(1, 20, debouncedSearch, '', '', sportName, 'published'); // Force published for public list
             setMatches(data);
         } catch (e) {
