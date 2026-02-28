@@ -78,7 +78,7 @@ export default function ClubDetailScreen() {
                     debouncedSearch,
                     'all',
                     id as string,
-                    !selectedSport ? '' : (sports.find(s => s.code === selectedSport)?.name || ''),
+                    !selectedSport ? undefined : (sports.find(s => s.code === selectedSport)?.name || ''),
                     selectedStatus === 'all' ? '' : selectedStatus
                 ),
                 api.getClubs(1, 100, '', 'joined'),
