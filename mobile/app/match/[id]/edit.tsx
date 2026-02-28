@@ -48,6 +48,7 @@ export default function EditMatchScreen() {
     const [status, setStatus] = useState('published');
     const [includeHostAsParticipant, setIncludeHostAsParticipant] = useState(false);
     const [rescheduleReason, setRescheduleReason] = useState('');
+    const [clubId, setClubId] = useState('');
 
     useEffect(() => {
         loadData();
@@ -70,6 +71,7 @@ export default function EditMatchScreen() {
 
             setSports(sportsData);
             setOriginalMatch(matchData);
+            setClubId(matchData.club_id || matchData.club?.id || "");
             setStatus(matchData.status || 'published');
 
             // Populate Form
@@ -121,7 +123,7 @@ export default function EditMatchScreen() {
         } catch (e) {
             console.error(e);
             Alert.alert("Error", "Failed to load match details");
-            router.back();
+            router.push(`/club/${clubId}`);
         } finally {
             setLoading(false);
         }
@@ -215,7 +217,17 @@ export default function EditMatchScreen() {
             return;
         }
 
-        const isPublished = status === 'published' || status === 'open';
+        // Check if date is in the past
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const selectedDate = new Date(date);
+        selectedDate.setHours(0, 0, 0, 0);
+        
+        if (selectedDate < today) {
+            alert("Peringatan: Tanggal yang dipilih sudah berlalu!");
+        }
+
+const isPublished = status === 'published' || status === 'open';
         const finalStatus = targetStatus || status;
 
         // If published, ensure reschedule reason if date changed (optional check)
@@ -247,7 +259,7 @@ export default function EditMatchScreen() {
 
             await api.updateMatch(id as string, updateData);
             Alert.alert("Success", targetStatus === 'published' ? "Match Published!" : "Match Updated!");
-            router.back();
+            router.push(`/club/${clubId}`);
         } catch (e: any) {
             Alert.alert("Error", e.message || "Failed to update");
         } finally {
@@ -273,7 +285,7 @@ export default function EditMatchScreen() {
                             const reason = rescheduleReason || "Cancelled by Host";
                             await api.cancelMatch(id as string, reason);
                             Alert.alert("Cancelled", "Match has been cancelled.");
-                            router.back();
+                            router.push(`/club/${clubId}`);
                         } catch (e: any) {
                             Alert.alert("Error", e.message || "Failed to cancel");
                             setSaving(false);
@@ -293,7 +305,17 @@ export default function EditMatchScreen() {
     }
 
     // UI Helpers
-    const isPublished = status === 'published' || status === 'open';
+    // Check if date is in the past
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const selectedDate = new Date(date);
+        selectedDate.setHours(0, 0, 0, 0);
+        
+        if (selectedDate < today) {
+            alert("Peringatan: Tanggal yang dipilih sudah berlalu!");
+        }
+
+const isPublished = status === 'published' || status === 'open';
     const isDraft = status === 'draft';
     const isRestricted = isPublished; // Published matches have restricted editing
 

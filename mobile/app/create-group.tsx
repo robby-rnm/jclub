@@ -140,6 +140,17 @@ export default function CreateGroupScreen() {
             return;
         }
 
+        
+        // Check if date is in the past
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const selectedDate = new Date(date);
+        selectedDate.setHours(0, 0, 0, 0);
+        
+        if (selectedDate < today) {
+            alert("Peringatan: Tanggal yang dipilih sudah berlalu!");
+        }
+
         // Parse quotas & prices
         const quotas: { [key: string]: number } = {};
         const prices: { [key: string]: number } = {};

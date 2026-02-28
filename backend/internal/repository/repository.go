@@ -339,7 +339,7 @@ func (r *repository) ListMatches(filter MatchFilter) ([]models.Match, error) {
 
 	// Only filter by date if looking for public matches (browsing)
 	// If filtering by "My Created" or "My Joined", show history too.
-	if filter.CreatorID == "" && filter.JoinedUserID == "" {
+	if filter.CreatorID == "" && filter.JoinedUserID == "" && filter.ClubID == "" {
 		query = query.Where("date >= ?", startOfDay)
 	}
 
