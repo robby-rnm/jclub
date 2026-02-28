@@ -65,7 +65,7 @@ export default function Login() {
             await signIn(provider, '', token); // Updated signIn to handle social
             router.replace('/');
         } catch (e: any) {
-            Alert.alert('Social Login Failed', e.message);
+            Alert.alert('Social Login Gagal', e.message);
         } finally {
             setLoading(false);
         }
@@ -73,7 +73,7 @@ export default function Login() {
 
     const handleEmailLogin = async () => {
         if (!email || !password) {
-            Alert.alert('Error', 'Please enter Email and Password');
+            Alert.alert('Error', 'Mohon isi Email dan Password');
             return;
         }
 
@@ -83,7 +83,7 @@ export default function Login() {
             router.replace('/');
         } catch (e: any) {
             console.error(e);
-            Alert.alert('Login Failed', e.message || 'Invalid credentials');
+            Alert.alert('Login Gagal', e.message || 'Email atau password salah');
         } finally {
             setLoading(false);
         }

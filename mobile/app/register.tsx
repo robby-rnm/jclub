@@ -10,7 +10,7 @@ const PRIMARY_GREEN = '#3E8E41';
 
 export default function Register() {
     const router = useRouter();
-    const [name, setName] = useState('');
+    const [name, setNama] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
@@ -18,17 +18,17 @@ export default function Register() {
 
     const handleRegister = async () => {
         if (!name || !email || !password || !confirmPassword) {
-            Alert.alert('Error', 'Please fill in all fields');
+            Alert.alert('Error', 'Mohon isi semua kolom');
             return;
         }
 
         if (password !== confirmPassword) {
-            Alert.alert('Error', 'Passwords do not match');
+            Alert.alert('Error', 'Password tidak cocok');
             return;
         }
 
         if (password.length < 6) {
-            Alert.alert('Error', 'Password must be at least 6 characters');
+            Alert.alert('Error', 'Password minimal 6 karakter');
             return;
         }
 
@@ -52,16 +52,16 @@ export default function Register() {
             <SafeAreaView style={styles.safeArea}>
                 <ScrollView contentContainerStyle={styles.contentContainer}>
 
-                    <Text style={styles.title}>Create Account</Text>
-                    <Text style={styles.subtitle}>Sign up to join the game!</Text>
+                    <Text style={styles.title}>Buat Akun</Text>
+                    <Text style={styles.subtitle}>Daftar untuk join game!</Text>
 
                     <View style={styles.formContainer}>
-                        <Text style={styles.label}>Name</Text>
+                        <Text style={styles.label}>Nama</Text>
                         <TextInput
                             style={styles.input}
-                            placeholder="Full Name"
+                            placeholder="Full Nama"
                             value={name}
-                            onChangeText={setName}
+                            onChangeText={setNama}
                         />
 
                         <Text style={styles.label}>Email</Text>
@@ -83,7 +83,7 @@ export default function Register() {
                             secureTextEntry
                         />
 
-                        <Text style={styles.label}>Confirm Password</Text>
+                        <Text style={styles.label}>Konfirmasi Password</Text>
                         <TextInput
                             style={styles.input}
                             placeholder="******"
@@ -100,7 +100,7 @@ export default function Register() {
                             {loading ? (
                                 <ActivityIndicator color="#fff" />
                             ) : (
-                                <Text style={styles.registerBtnText}>Sign Up</Text>
+                                <Text style={styles.registerBtnText}>Daftar</Text>
                             )}
                         </TouchableOpacity>
 
