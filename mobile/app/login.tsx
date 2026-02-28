@@ -92,7 +92,7 @@ export default function Login() {
     const handleSocialLogin = async (provider: string) => {
         if (provider === 'google') {
             if (!process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID_WEB) {
-                Alert.alert("Configuration Required", "Google Client IDs are missing in .env file.");
+                Alert.alert("Configuration Required", "Google Client ID diperlukan in .env file.");
                 return;
             }
             googlePromptAsync();
@@ -122,7 +122,7 @@ export default function Login() {
                         <Text style={styles.inputLabel}>Email</Text>
                         <TextInput
                             style={styles.input}
-                            placeholder="email@example.com"
+                            placeholder="contoh@email.com"
                             value={email}
                             onChangeText={setEmail}
                             autoCapitalize="none"

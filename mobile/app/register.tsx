@@ -40,7 +40,7 @@ export default function Register() {
             ]);
         } catch (e: any) {
             console.error(e);
-            Alert.alert('Registration Failed', e.message);
+            Alert.alert('Pendaftaran Gagal', e.message);
         } finally {
             setLoading(false);
         }
@@ -67,7 +67,7 @@ export default function Register() {
                         <Text style={styles.label}>Email</Text>
                         <TextInput
                             style={styles.input}
-                            placeholder="email@example.com"
+                            placeholder="contoh@email.com"
                             value={email}
                             onChangeText={setEmail}
                             autoCapitalize="none"
