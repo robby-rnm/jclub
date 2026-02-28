@@ -225,6 +225,7 @@ export default function EditMatchScreen() {
         
         if (selectedDate < today) {
             alert("Peringatan: Tanggal yang dipilih sudah berlalu!");
+            return;
         }
 
 const isPublished = status === 'published' || status === 'open';
@@ -313,6 +314,7 @@ const isPublished = status === 'published' || status === 'open';
         
         if (selectedDate < today) {
             alert("Peringatan: Tanggal yang dipilih sudah berlalu!");
+            return;
         }
 
 const isPublished = status === 'published' || status === 'open';

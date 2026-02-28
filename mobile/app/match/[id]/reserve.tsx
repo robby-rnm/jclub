@@ -79,7 +79,8 @@ export default function ReserveSlotScreen() {
             const currentCounts: { [key: string]: number } = {};
             if (matchData.bookings) {
                 matchData.bookings.forEach((b: any) => {
-                    if (b.status === 'confirmed') {
+                    const statusKey = b.status || (b as any).Status;
+                    if (statusKey === 'confirmed') {
                         // Assuming Position in Booking JSON is now lowercase 'position' if we changed Booking too.
                         // Wait, I didn't verify Booking JSON Response in API for "Position".
                         // Booking struct: "Position Position".
@@ -94,7 +95,10 @@ export default function ReserveSlotScreen() {
                         // So Booking struct still has Uppercase keys by default!
                         // This means `participants.tsx` change to `status`, `is_paid` etc might be WRONG if backend sends Uppercase.
                         // I MUST update `Booking` struct in `models.go` as well.
-                        currentCounts[b.position] = (currentCounts[b.position] || 0) + 1;
+                        const posKey = b.position || (b as any).Position;
+                        if (posKey) {
+                            currentCounts[posKey] = (currentCounts[posKey] || 0) + 1;
+                        }
                     }
                 });
             }

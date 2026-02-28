@@ -149,6 +149,7 @@ export default function CreateGroupScreen() {
         
         if (selectedDate < today) {
             alert("Peringatan: Tanggal yang dipilih sudah berlalu!");
+            return;
         }
 
         // Parse quotas & prices
@@ -281,7 +282,7 @@ export default function CreateGroupScreen() {
                                     <View pointerEvents="none" style={{ zIndex: 1 }}>
                                         <TextInput
                                             style={[styles.input, styles.inputWithIcon]}
-                                            placeholder="mm / dd / yyyy"
+                                            placeholder="dd / mm / yyyy"
                                             placeholderTextColor="#BDBDBD"
                                             value={date.toLocaleDateString()}
                                             editable={false}
