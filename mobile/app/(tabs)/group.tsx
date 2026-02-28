@@ -148,11 +148,11 @@ export default function ClubScreen() {
                             </View>
                             <View style={{ flex: 1, marginLeft: 12 }}>
                                 <Text style={styles.clubName}>{club.name}</Text>
-                                <Text style={styles.clubDesc} numberOfLines={2}>{club.description || 'No description'}</Text>
+                                <Text style={styles.clubDesc} numberOfLines={2}>{club.description || 'Tidak ada deskripsi'}</Text>
                                 <View style={styles.metaRow}>
                                     <View style={styles.metaItem}>
                                         <Ionicons name="person-outline" size={12} color="#9E9E9E" />
-                                        <Text style={styles.metaText}>{club.creator?.name || 'Unknown'}</Text>
+                                        <Text style={styles.metaText}>{club.creator?.name || 'Tidak dikenal'}</Text>
                                     </View>
                                     <View style={styles.metaItem}>
                                         <Ionicons name="people-outline" size={12} color="#9E9E9E" />
@@ -186,7 +186,7 @@ export default function ClubScreen() {
                 ListFooterComponent={
                     loadingMore ? (
                         <View style={{ padding: 20 }}>
-                            <Text style={{ textAlign: 'center', color: '#999' }}>Loading more...</Text>
+                            <Text style={{ textAlign: 'center', color: '#999' }}>Memuat lebih banyak...</Text>
                         </View>
                     ) : null
                 }

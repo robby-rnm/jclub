@@ -92,7 +92,7 @@ export default function MyClubsScreen() {
                     }}
                 >
                     <Ionicons name="create-outline" size={20} color={PRIMARY_GREEN} />
-                    <Text style={styles.editBtnText}>Edit</Text>
+                    <Text style={styles.editBtnText}>Ubah</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -132,7 +132,7 @@ export default function MyClubsScreen() {
                     <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
                         <Ionicons name="arrow-back" size={24} color="#1C1C1E" />
                     </TouchableOpacity>
-                    <Text style={styles.headerTitle}>My Club</Text>
+                    <Text style={styles.headerTitle}>Club Saya</Text>
                     <TouchableOpacity onPress={() => router.push('/club/create')} style={styles.addBtn}>
                         <Ionicons name="add" size={24} color={PRIMARY_GREEN} />
                     </TouchableOpacity>

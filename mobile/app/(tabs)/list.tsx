@@ -127,7 +127,7 @@ export default function MatchesScreen() {
                         <View style={styles.matchHeader}>
                             <Text style={styles.matchTitle}>{match.title}</Text>
                             <View style={[styles.statusTag, { backgroundColor: '#E8F5E9' }]}>
-                                <Text style={[styles.statusText, { color: PRIMARY_GREEN }]}>Open</Text>
+                                <Text style={[styles.statusText, { color: PRIMARY_GREEN }]}>Terbuka</Text>
                             </View>
                         </View>
 
