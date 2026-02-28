@@ -112,7 +112,7 @@ const cardStyles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 8,
-    gap: 4,
+    marginRight: 4,
   },
   badgeRow: {
     flexDirection: 'row',
@@ -122,7 +122,7 @@ const cardStyles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 6,
-    gap: 6,
+    marginRight: 6,
   },
   footer: {
     flexDirection: 'row',
@@ -153,7 +153,7 @@ const clubCardStyles = StyleSheet.create({
   },
   actions: {
     flexDirection: 'row',
-    gap: 8,
+    marginRight: 8,
     paddingTop: 12,
     borderTopWidth: 1,
     borderTopColor: '#EEEEEE',

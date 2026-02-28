@@ -150,6 +150,7 @@ export default function CreateGroupScreen() {
         if (selectedDate < today) {
             alert("Peringatan: Tanggal yang dipilih sudah berlalu!");
             return;
+            return;
         }
 
         // Parse quotas & prices
