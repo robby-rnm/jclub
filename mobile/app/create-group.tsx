@@ -199,12 +199,12 @@ export default function CreateGroupScreen() {
                 date: date.toISOString().split('T')[0],
                 time: time.toTimeString().split(' ')[0].substring(0, 5),
                 status: status,
-                include_host_as_participant: includeHostAsParticipant
+                include_host_as_participant: includeHostAsParticipant as any
             });
             alert(status === 'draft' ? "Draft Saved!" : "Match Published!");
             router.back();
         } catch (e: any) {
-            alert(e.message || "Failed to create");
+            alert(e.message || "Gagal Membuat");
         } finally {
             setLoading(false);
         }

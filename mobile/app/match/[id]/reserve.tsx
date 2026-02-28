@@ -123,11 +123,11 @@ export default function ReserveSlotScreen() {
         }
         try {
             await api.joinMatch(params.id as string, position);
-            alert("Pembayaran Berhasil! Kamu telah terdaftar.");
+            alert("Pendaftaran Berhasil! Kamu telah terdaftar.");
             router.replace(`/match/${params.id}`);
         } catch (e: any) {
             console.error(e);
-            alert("Gagal melakukan booking. " + e.message);
+            alert("Ups! Terjadi kesalahan. Silakan coba lagi.");
         }
     };
 

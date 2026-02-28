@@ -96,12 +96,6 @@ export default function Login() {
                 return;
             }
             googlePromptAsync();
-        } else if (provider === 'facebook') {
-            if (!process.env.EXPO_PUBLIC_FACEBOOK_APP_ID) {
-                Alert.alert("Configuration Required", "Facebook App ID is missing in .env file.");
-                return;
-            }
-            fbPromptAsync();
         }
     };
 
@@ -171,16 +165,6 @@ export default function Login() {
                             <Text style={styles.socialBtnText}>Masuk dengan Google</Text>
                         </TouchableOpacity>
 
-                        <TouchableOpacity
-                            style={[styles.socialButton, styles.fbBtn]}
-                            onPress={() => handleSocialLogin('facebook')}
-                            disabled={loading}
-                        >
-                            <View style={styles.iconWrapper}>
-                                <FontAwesome5 name="facebook-f" size={20} color="#fff" />
-                            </View>
-                            <Text style={styles.socialBtnText}>Masuk dengan Facebook</Text>
-                        </TouchableOpacity>
 
                         <TouchableOpacity onPress={() => router.push('/register')} style={styles.signUpContainer}>
                             <Text style={styles.footerText}>Belum punya akun? <Text style={styles.linkText}>Daftar</Text></Text>

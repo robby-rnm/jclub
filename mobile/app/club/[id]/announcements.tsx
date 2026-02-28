@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useState, useEffect, useCallback } from 'react';
 import { api } from '@/services/api';
+import { Skeleton } from '@/components/loading-skeleton';
 
 const PRIMARY_GREEN = '#3E8E41';
 
@@ -107,7 +108,13 @@ export default function AnnouncementListScreen() {
                     <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[PRIMARY_GREEN]} />
                 }
                 ListEmptyComponent={
-                    !loading ? (
+                    loading ? (
+                        <View style={{ padding: 20 }}>
+                            <Skeleton height={80} style={{ marginBottom: 12 }} borderRadius={12} />
+                            <Skeleton height={80} style={{ marginBottom: 12 }} borderRadius={12} />
+                            <Skeleton height={80} style={{ marginBottom: 12 }} borderRadius={12} />
+                        </View>
+                    ) : (
                         <View style={styles.emptyContainer}>
                             <Ionicons name="megaphone-outline" size={64} color="#E0E0E0" />
                             <Text style={styles.emptyText}>Belum ada pengumuman</Text>
@@ -118,7 +125,7 @@ export default function AnnouncementListScreen() {
                                 <Text style={styles.createBtnText}>Buat Pengumuman Baru</Text>
                             </TouchableOpacity>
                         </View>
-                    ) : null
+                    )
                 }
             />
         </View>

@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useState, useCallback, useEffect } from 'react';
 import { api, Match } from '@/services/api';
+import { Skeleton } from '@/components/loading-skeleton';
 
 const PRIMARY_GREEN = '#3E8E41';
 const TEXT_DARK = '#1C1C1E';
@@ -166,10 +167,18 @@ export default function MatchesScreen() {
                     </TouchableOpacity>
                 )}
                 ListEmptyComponent={
+                    loading ? (
+                        <View style={{ padding: 20 }}>
+                            <Skeleton height={100} style={{ marginBottom: 12 }} borderRadius={12} />
+                            <Skeleton height={100} style={{ marginBottom: 12 }} borderRadius={12} />
+                            <Skeleton height={100} style={{ marginBottom: 12 }} borderRadius={12} />
+                        </View>
+                    ) : (
                     <View style={styles.emptyState}>
                         <Ionicons name="calendar-outline" size={48} color="#BDBDBD" />
                         <Text style={styles.emptyText}>Tidak ada pertandingan ditemukan.</Text>
                     </View>
+                    )
                 }
             />
         </View>

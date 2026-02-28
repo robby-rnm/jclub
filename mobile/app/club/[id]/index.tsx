@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useState, useCallback, useEffect } from 'react';
 import { api, Club, Match } from '@/services/api';
+import { Skeleton } from '@/components/loading-skeleton';
 
 const PRIMARY_GREEN = '#3E8E41';
 const TEXT_DARK = '#1C1C1E';
@@ -343,9 +344,17 @@ export default function ClubDetailScreen() {
                     );
                 }}
                 ListEmptyComponent={
-                    <View style={styles.emptyState}>
-                        <Text style={styles.emptyText}>Belum ada jadwal main.</Text>
-                    </View>
+                    loading ? (
+                        <View style={{ padding: 20 }}>
+                            <Skeleton height={120} style={{ marginBottom: 12 }} borderRadius={12} />
+                            <Skeleton height={120} style={{ marginBottom: 12 }} borderRadius={12} />
+                            <Skeleton height={120} style={{ marginBottom: 12 }} borderRadius={12} />
+                        </View>
+                    ) : (
+                        <View style={styles.emptyState}>
+                            <Text style={styles.emptyText}>Belum ada jadwal main.</Text>
+                        </View>
+                    )
                 }
             />
         </View>

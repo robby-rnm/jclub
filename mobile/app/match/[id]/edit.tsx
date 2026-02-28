@@ -254,7 +254,7 @@ const isPublished = status === 'published' || status === 'open';
                 time: time.toTimeString().split(' ')[0].substring(0, 5),
                 status: finalStatus,
                 reschedule_reason: rescheduleReason,
-                include_host_as_participant: includeHostAsParticipant
+                include_host_as_participant: includeHostAsParticipant as any
             };
 
             await api.updateMatch(id as string, updateData);

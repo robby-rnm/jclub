@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useState, useCallback } from 'react';
 import { api, Club } from '@/services/api';
+import { Skeleton } from '@/components/loading-skeleton';
 
 const PRIMARY_GREEN = '#3E8E41';
 
@@ -146,7 +147,15 @@ export default function MyClubsScreen() {
                 refreshControl={
                     <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={PRIMARY_GREEN} />
                 }
-                ListEmptyComponent={!loading ? renderEmpty : null}
+                ListEmptyComponent={
+                    loading ? (
+                        <View style={{ padding: 20 }}>
+                            <Skeleton height={100} style={{ marginBottom: 12 }} borderRadius={12} />
+                            <Skeleton height={100} style={{ marginBottom: 12 }} borderRadius={12} />
+                            <Skeleton height={100} style={{ marginBottom: 12 }} borderRadius={12} />
+                        </View>
+                    ) : renderEmpty
+                }
             />
         </View>
     );

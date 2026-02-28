@@ -6,6 +6,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons';
 import { useState, useCallback, useEffect } from 'react';
 import { api, Club } from '@/services/api';
+import { Skeleton } from '@/components/loading-skeleton';
 
 const PRIMARY_GREEN = '#3E8E41';
 const TEXT_DARK = '#1C1C1E';
@@ -164,6 +165,13 @@ export default function ClubScreen() {
                     </TouchableOpacity>
                 )}
                 ListEmptyComponent={
+                    (loadingMore || refreshing) ? (
+                        <View style={{ padding: 20 }}>
+                            <Skeleton height={80} style={{ marginBottom: 12 }} borderRadius={12} />
+                            <Skeleton height={80} style={{ marginBottom: 12 }} borderRadius={12} />
+                            <Skeleton height={80} style={{ marginBottom: 12 }} borderRadius={12} />
+                        </View>
+                    ) : (
                     <View style={styles.emptyState}>
                         <Ionicons name="people-outline" size={48} color="#BDBDBD" />
                         <Text style={styles.emptyText}>Tidak ada club ditemukan.</Text>
@@ -171,6 +179,7 @@ export default function ClubScreen() {
                             <Text style={styles.createBtnText}>Buat Club Baru</Text>
                         </TouchableOpacity>
                     </View>
+                    )
                 }
                 onEndReached={loadMore}
                 onEndReachedThreshold={0.5}
