@@ -29,10 +29,10 @@ export default function EditProfileScreen() {
     const loadProfile = async () => {
         try {
             const data = await api.getProfile();
-            setName(data.Name || '');
-            setPhone(data.Phone || '');
-            setEmail(data.Email || '');
-            setAvatar(data.Avatar || '');
+            setName(data.name || '');
+            setPhone(data.phone || '');
+            setEmail(data.email || '');
+            setAvatar(data.avatar || '');
         } catch (e) {
             console.error(e);
             Alert.alert("Error", "Failed to load profile");
