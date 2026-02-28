@@ -20,8 +20,8 @@ export default function ManageClubScreen() {
     const [logo, setLogo] = useState('');
     const [instagram, setInstagram] = useState('');
 
-    const [loading, setMemuat... useState(false);
-    const [initialMemuat...etInitialMemuat... useState(true);
+    const [loading, setLoading] = useState(false);
+    const [initialLoading, setInitialLoading] = useState(true);
 
     useEffect(() => {
         loadClubData();
@@ -34,11 +34,11 @@ export default function ManageClubScreen() {
             const club = data.club || data; // Handle both old/new structure if transition
             console.log("Manage Club Data Loaded:", club);
 
-            setName(club.name || club.name || '');
-            setDescription(club.description || club.description || '');
-            setLogo(club.logo || club.logo || '');
+            setName(club.Name || club.name || '');
+            setDescription(club.Description || club.description || '');
+            setLogo(club.Logo || club.logo || '');
 
-            const socialMediaStr = club.social_media || club.social_media;
+            const socialMediaStr = club.SocialMedia || club.social_media;
             if (socialMediaStr) {
                 try {
                     const socials = JSON.parse(socialMediaStr);
@@ -46,15 +46,15 @@ export default function ManageClubScreen() {
                 } catch (e) { console.error("Social parse error", e); }
             }
         } catch (e) {
-            Alert.alert('Kesalahan', 'Gagal memuat data club');
+            Alert.alert('Error', 'Gagal memuat data club');
             router.back();
         } finally {
-            setInitialMemuat...lse);
+            setInitialLoading(false);
         }
     };
 
     const handleUpdateClub = async () => {
-        setMemuat...ue);
+        setLoading(true);
         try {
             const socialMedia = JSON.stringify({ instagram });
             await api.updateClub(id as string, {
@@ -65,9 +65,9 @@ export default function ManageClubScreen() {
             });
             Alert.alert('Sukses', 'Data club diperbarui');
         } catch (e: any) {
-            Alert.alert('Kesalahan', e.message);
+            Alert.alert('Error', e.message);
         } finally {
-            setMemuat...lse);
+            setLoading(false);
         }
     };
 
@@ -90,7 +90,7 @@ export default function ManageClubScreen() {
     };
 
     const uploadLogo = async (uri: string) => {
-        setMemuat...ue);
+        setLoading(true);
         try {
             const uploadedUrl = await api.uploadClubLogo(uri);
             setLogo(uploadedUrl);
@@ -108,11 +108,11 @@ export default function ManageClubScreen() {
         } catch (e: any) {
             Alert.alert("Upload Gagal", e.message);
         } finally {
-            setMemuat...lse);
+            setLoading(false);
         }
     };
 
-    if (initialMemuat...eturn <View style={styles.center}><Text>Memuat...</Text></View>;
+    if (initialLoading) return <View style={styles.center}><Text>Loading...</Text></View>;
 
     return (
         <View style={styles.container}>

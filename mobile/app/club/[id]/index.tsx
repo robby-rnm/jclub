@@ -19,7 +19,7 @@ export default function ClubDetailScreen() {
     const [memberCount, setMemberCount] = useState(0);
     const [announcements, setAnnouncements] = useState<any[]>([]);
     const [refreshing, setRefreshing] = useState(false);
-    const [loading, setMemuat... useState(true);
+    const [loading, setLoading] = useState(true);
 
     const [searchQuery, setSearchQuery] = useState('');
     const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -37,7 +37,7 @@ export default function ClubDetailScreen() {
 
     const [isMember, setIsMember] = useState(false);
     const [currentUser, setCurrentUser] = useState<any>(null);
-    const [actionMemuat...etActionMemuat... useState(false);
+    const [actionLoading, setActionLoading] = useState(false);
 
     // Fetch Sports
     useEffect(() => {
@@ -78,7 +78,7 @@ export default function ClubDetailScreen() {
                     debouncedSearch,
                     'all',
                     id as string,
-                    !selectedSport ? undefined : (sports.find(s => s.code === selectedSport)?.name || ''),
+                    selectedSport === 'all' ? '' : selectedSport,
                     selectedStatus === 'all' ? '' : selectedStatus
                 ),
                 api.getClubs(1, 100, '', 'joined'),
@@ -95,13 +95,13 @@ export default function ClubDetailScreen() {
         } catch (e) {
             console.error(e);
         } finally {
-            setMemuat...lse);
+            setLoading(false);
         }
     };
 
-    const handleGabungKeluar = async () => {
+    const handleJoinLeave = async () => {
         if (!club) return;
-        setActionMemuat...ue);
+        setActionLoading(true);
         try {
             if (isMember) {
                 await api.leaveClub(club.id);
@@ -117,7 +117,7 @@ export default function ClubDetailScreen() {
         } catch (e: any) {
             alert(e.message);
         } finally {
-            setActionMemuat...lse);
+            setActionLoading(false);
         }
     };
 
@@ -140,9 +140,9 @@ export default function ClubDetailScreen() {
 
     const getStatusBadge = (status: string) => {
         switch (status) {
-            case 'draft': return { bg: '#FFF3E0', color: '#EF6C00', label: 'Draf' };
-            case 'cancelled': return { bg: '#FFEBEE', color: '#D32F2F', label: 'Dibatalkan' };
-            default: return { bg: '#E8F5E9', color: PRIMARY_GREEN, label: 'Dipublikasikan' };
+            case 'draft': return { bg: '#FFF3E0', color: '#EF6C00', label: 'Draft' };
+            case 'cancelled': return { bg: '#FFEBEE', color: '#D32F2F', label: 'Cancelled' };
+            default: return { bg: '#E8F5E9', color: PRIMARY_GREEN, label: 'Published' };
         }
     };
 
@@ -151,7 +151,7 @@ export default function ClubDetailScreen() {
     if (loading && !club) {
         return (
             <View style={styles.loadingContainer}>
-                <Text>Memuat...</Text>
+                <Text>Loading...</Text>
             </View>
         );
     }
@@ -159,7 +159,7 @@ export default function ClubDetailScreen() {
     if (!club) {
         return (
             <View style={styles.loadingContainer}>
-                <Text>Club tidak ditemukan</Text>
+                <Text>Club not found</Text>
             </View>
         );
     }
@@ -173,13 +173,13 @@ export default function ClubDetailScreen() {
                         <Ionicons name="arrow-back" size={24} color="#1C1C1E" />
                     </TouchableOpacity>
                     <Text style={styles.headerTitle}>{club?.name}</Text>
-                    <TouchableOpacity onPress={handleGabungKeluar} disabled={actionMemuat...tyle={{ padding: 8 }}>
-                        {actionMemuat...(
+                    <TouchableOpacity onPress={handleJoinLeave} disabled={actionLoading} style={{ padding: 8 }}>
+                        {actionLoading ? (
                             <Text style={{ color: PRIMARY_GREEN }}>...</Text>
                         ) : isMember ? (
-                            <Text style={{ color: '#D32F2F', fontWeight: '600' }}>Keluar</Text>
+                            <Text style={{ color: '#D32F2F', fontWeight: '600' }}>Leave</Text>
                         ) : (
-                            <Text style={{ color: PRIMARY_GREEN, fontWeight: '600' }}>Gabung</Text>
+                            <Text style={{ color: PRIMARY_GREEN, fontWeight: '600' }}>Join</Text>
                         )}
                     </TouchableOpacity>
                 </View>
@@ -235,7 +235,7 @@ export default function ClubDetailScreen() {
                                 styles.actionBtn,
                                 { backgroundColor: isMember ? '#FFEBEE' : PRIMARY_GREEN, marginTop: 12 }
                             ]}
-                            onPress={handleGabungKeluar}
+                            onPress={handleJoinLeave}
                             disabled={actionLoading}
                         >
                             <Text style={[styles.actionBtnText, { color: isMember ? '#D32F2F' : '#fff' }]}>

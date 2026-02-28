@@ -23,7 +23,7 @@ export default function AnnouncementListScreen() {
     const router = useRouter();
 
     const [announcements, setAnnouncements] = useState<Announcement[]>([]);
-    const [loading, setMemuat... useState(true);
+    const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
 
     const loadAnnouncements = useCallback(async () => {
@@ -31,9 +31,9 @@ export default function AnnouncementListScreen() {
             const data = await api.getAnnouncementsForOwner(id as string);
             setAnnouncements(data || []);
         } catch (e: any) {
-            Alert.alert('Kesalahan', e.message);
+            Alert.alert('Error', e.message);
         } finally {
-            setMemuat...lse);
+            setLoading(false);
             setRefreshing(false);
         }
     }, [id]);
@@ -48,11 +48,11 @@ export default function AnnouncementListScreen() {
     };
 
     const StatusBadge = ({ status }: { status: string }) => {
-        const isDipublikasikan = status === 'published';
+        const isPublished = status === 'published';
         return (
-            <View style={[styles.badge, isDipublikasikan ? styles.badgeDipublikasikan : styles.badgeDraf]}>
-                <Text style={[styles.badgeText, isDipublikasikan ? styles.badgeTextDipublikasikan : styles.badgeTextDraf]}>
-                    {isDipublikasikan ? 'Dipublikasikan' : 'Draf'}
+            <View style={[styles.badge, isPublished ? styles.badgePublished : styles.badgeDraft]}>
+                <Text style={[styles.badgeText, isPublished ? styles.badgeTextPublished : styles.badgeTextDraft]}>
+                    {isPublished ? 'Published' : 'Draft'}
                 </Text>
             </View>
         );
@@ -167,11 +167,11 @@ const styles = StyleSheet.create({
     cardFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
     dateText: { fontSize: 12, color: '#9E9E9E' },
     badge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 4 },
-    badgeDipublikasikan: { backgroundColor: '#E8F5E9' },
-    badgeDraf: { backgroundColor: '#F5F5F5' },
+    badgePublished: { backgroundColor: '#E8F5E9' },
+    badgeDraft: { backgroundColor: '#F5F5F5' },
     badgeText: { fontSize: 10, fontWeight: '700' },
-    badgeTextDipublikasikan: { color: '#2E7D32' },
-    badgeTextDraf: { color: '#757575' },
+    badgeTextPublished: { color: '#2E7D32' },
+    badgeTextDraft: { color: '#757575' },
     emptyContainer: { flex: 1, alignItems: 'center', justifyContent: 'center', marginTop: 100 },
     emptyText: { fontSize: 16, color: '#9E9E9E', marginTop: 16, marginBottom: 24 },
     createBtnEmpty: { backgroundColor: PRIMARY_GREEN, paddingHorizontal: 20, paddingVertical: 12, borderRadius: 8 },
