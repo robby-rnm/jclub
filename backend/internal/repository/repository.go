@@ -33,7 +33,7 @@ type Repository interface {
 	GetMatchByID(id string) (*models.Match, error)
 	GetMatchByIDLock(id string) (*models.Match, error) // For Locking
 	UpdateMatch(match *models.Match) error
-SoftDeleteMatch(matchID string) error
+	SoftDeleteMatch(matchID string) error
 
 	CreateBooking(booking *models.Booking) error
 	GetBookingsByMatchID(matchID string) ([]models.Booking, error)
@@ -66,6 +66,8 @@ SoftDeleteMatch(matchID string) error
 	JoinClub(member *models.ClubMember) error
 	LeaveClub(userID, clubID string) error
 	GetClubMember(userID, clubID string) (*models.ClubMember, error)
+	GetClubMemberAny(userID, clubID string) (*models.ClubMember, error)
+	ReactivateClubMember(userID, clubID string) error
 	UpdateClub(club *models.Club) error
 	DeleteClub(clubID string) error
 	GetClubMemberCount(clubID string) (int64, error)
@@ -111,7 +113,7 @@ func (r *repository) GetClubs(page, limit int, search string, userID string, fil
 
 	if filterType == "joined" && userID != "" {
 		// Subquery for clubs joined by user
-		subquery := r.db.Table("club_members").Select("club_id").Where("user_id = ?", userID)
+		subquery := r.db.Table("club_members").Select("club_id").Where("user_id = ? AND is_active = ?", userID, true)
 		query = query.Where("id IN (?)", subquery)
 	} else if filterType == "created" && userID != "" {
 		query = query.Where("creator_id = ?", userID)
@@ -133,13 +135,26 @@ func (r *repository) LeaveClub(userID, clubID string) error {
 
 func (r *repository) GetClubMember(userID, clubID string) (*models.ClubMember, error) {
 	var member models.ClubMember
+	err := r.db.Where("user_id = ? AND club_id = ? AND is_active = ?", userID, clubID, true).First(&member).Error
+	return &member, err
+}
+
+func (r *repository) GetClubMemberAny(userID, clubID string) (*models.ClubMember, error) {
+	var member models.ClubMember
 	err := r.db.Where("user_id = ? AND club_id = ?", userID, clubID).First(&member).Error
 	return &member, err
 }
 
+func (r *repository) ReactivateClubMember(userID, clubID string) error {
+	return r.db.Model(&models.ClubMember{}).Where("user_id = ? AND club_id = ?", userID, clubID).Updates(map[string]interface{}{
+		"is_active": true,
+		"role":      "member",
+	}).Error
+}
+
 func (r *repository) GetClubByID(id string) (*models.Club, error) {
 	var club models.Club
-	err := r.db.Preload("Creator").Preload("Members").Preload("Members.User").First(&club, "id = ?", id).Error
+	err := r.db.Preload("Creator").Preload("Members", "is_active = ?", true).Preload("Members.User").First(&club, "id = ?", id).Error
 	return &club, err
 }
 
@@ -226,7 +241,7 @@ func (r *repository) UpdatePushToken(userID, token string) error {
 
 func (r *repository) GetClubMemberCount(clubID string) (int64, error) {
 	var count int64
-	err := r.db.Model(&models.ClubMember{}).Where("club_id = ?", clubID).Count(&count).Error
+	err := r.db.Model(&models.ClubMember{}).Where("club_id = ? AND is_active = ?", clubID, true).Count(&count).Error
 	return count, err
 }
 
@@ -235,7 +250,6 @@ func (r *repository) GetMasterSports() ([]models.Sport, error) {
 	err := r.db.Preload("Positions").Find(&sports).Error
 	return sports, err
 }
-
 
 // SportPosition Methods
 func (r *repository) CreateSportPosition(pos *models.SportPosition) error {
@@ -333,14 +347,14 @@ func (r *repository) ListMatches(filter MatchFilter) ([]models.Match, error) {
 	fmt.Printf("[Repo] ListMatches: %+v\n", filter)
 	var matches []models.Match
 	now := time.Now()
-	startOfDay := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
 
 	query := r.db.Preload("Bookings").Preload("Creator").Preload("Club").Where("is_active = ?", true).Order("date ASC")
 
 	// Only filter by date if looking for public matches (browsing)
 	// If filtering by "My Created" or "My Joined", show history too.
+	// Use current time instead of start of day so already-past matches do not appear as available.
 	if filter.CreatorID == "" && filter.JoinedUserID == "" && filter.ClubID == "" {
-		query = query.Where("date >= ?", startOfDay)
+		query = query.Where("date >= ?", now)
 	}
 
 	if filter.CreatorID != "" {
@@ -350,7 +364,7 @@ func (r *repository) ListMatches(filter MatchFilter) ([]models.Match, error) {
 	if filter.JoinedUserID != "" {
 		// Use Subquery to avoid DISTINCT/ORDER BY issues
 		// SELECT * FROM matches WHERE id IN (SELECT match_id FROM bookings WHERE user_id = ? AND status = 'confirmed')
-		subquery := r.db.Table("bookings").Select("match_id").Where("user_id = ? AND status = 'confirmed'", filter.JoinedUserID)
+		subquery := r.db.Table("bookings").Select("match_id").Where("user_id = ? AND status IN ?", filter.JoinedUserID, []string{"confirmed", "waitlist", "pending"})
 		query = query.Where("id IN (?)", subquery)
 	}
 
@@ -454,7 +468,6 @@ func (r *repository) GetMatchByIDLock(id string) (*models.Match, error) {
 	return &match, err
 }
 
-
 func (r *repository) SoftDeleteMatch(matchID string) error {
 	// Soft delete: set is_active to false
 	if err := r.db.Model(&models.Match{}).Where("id = ?", matchID).Update("is_active", false).Error; err != nil {
@@ -491,7 +504,6 @@ func (r *repository) GetWaitlist(matchID string, position models.Position) ([]mo
 		Order("waitlist_order ASC").Find(&bookings).Error
 	return bookings, err
 }
-
 
 // GetAllUsers - get all users
 func (r *repository) GetAllUsers() ([]models.User, error) {

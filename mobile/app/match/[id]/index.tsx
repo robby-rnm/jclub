@@ -82,7 +82,7 @@ export default function MatchDetailScreen() {
     if (loading) {
         return (
             <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
-                <Text style={{ color: '#757575' }}>Memuat...</Text>
+                <Text style={{ color: '#757575' }}>Loading...</Text>
             </View>
         );
     }
@@ -96,7 +96,7 @@ export default function MatchDetailScreen() {
                     ID: {id}
                 </Text>
                 <Text style={{ color: '#D32F2F', textAlign: 'center', marginTop: 8 }}>
-                    Error: {errorMsg || "Match tidak ditemukan"}
+                    Error: {errorMsg || "Match not found"}
                 </Text>
                 <TouchableOpacity onPress={() => router.replace('/(tabs)/group')} style={{ marginTop: 24, padding: 12, backgroundColor: '#E0E0E0', borderRadius: 8 }}>
                     <Text>Kembali ke List</Text>
@@ -105,10 +105,16 @@ export default function MatchDetailScreen() {
         );
     }
 
-    const currentPlayers = match.bookings ? match.bookings.length : 0;
+    const approvedBookings = match.bookings
+        ? match.bookings.filter((b: any) => ['confirmed', 'approved', 'registered'].includes((b.status || b.Status || '').toLowerCase()))
+        : [];
+    const myBooking = match.bookings?.find((b: any) => b.user_id === currentUser?.id);
+    const myBookingStatus = (myBooking?.status || myBooking?.Status || '').toLowerCase();
+    const isPendingApproval = myBookingStatus === 'pending';
+    const currentPlayers = approvedBookings.length;
     const progress = currentPlayers / match.max_players;
 
-    const userIsJoined = match.bookings?.some((b: any) => b.user_id === currentUser?.id);
+    const userIsJoined = !!myBooking && myBookingStatus !== 'rejected' && myBookingStatus !== 'cancelled';
 
     const myTeam = teams.find(t => t.members.some((m: any) => m.user.id === currentUser?.id));
     const opponentTeams = teams.filter(t => t.id !== myTeam?.id);
@@ -144,10 +150,10 @@ export default function MatchDetailScreen() {
                         <View style={{ flex: 1 }}>
                             <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
                                 <View style={[styles.statusTag, { backgroundColor: '#E3F2FD', marginRight: 8, paddingHorizontal: 8, paddingVertical: 4 }]}>
-                                    <Text style={[styles.statusText, { color: '#1976D2', fontSize: 10 }]}>{match.game_type || 'Aktivitas'}</Text>
+                                    <Text style={[styles.statusText, { color: '#1976D2', fontSize: 10 }]}>{match.game_type || 'Activity'}</Text>
                                 </View>
                                 <View style={styles.statusTag}>
-                                    <Text style={styles.statusText}>Slot Terbuka</Text>
+                                    <Text style={styles.statusText}>Open Slot</Text>
                                 </View>
                             </View>
                             <Text style={styles.matchTitle}>{match.title}</Text>
@@ -209,6 +215,12 @@ export default function MatchDetailScreen() {
                         <Text style={styles.noteText}>💡 Masih ada {match.max_players - currentPlayers} slot tersisa. Gas join sebelum penuh!</Text>
                     </View>
 
+                    {isPendingApproval && (
+                        <View style={[styles.noteBox, { backgroundColor: '#FFF8E1', marginTop: 12 }]}>
+                            <Text style={[styles.noteText, { color: '#E65100', fontWeight: '700' }]}>⏳ Pendaftaran kamu masih pending dan menunggu persetujuan pemilik club.</Text>
+                        </View>
+                    )}
+
                     {match.reschedule_reason && (
                         <View style={[styles.noteBox, { backgroundColor: '#FFF3E0', marginTop: 12 }]}>
                             <Text style={[styles.noteText, { color: '#E65100', fontWeight: 'bold' }]}>
@@ -237,7 +249,7 @@ export default function MatchDetailScreen() {
                                                 </Text>
                                             </View>
                                             <Text style={[styles.playerText, member.user.id === currentUser?.id && { fontWeight: '700', color: PRIMARY_GREEN }]}>
-                                                {member.user.name} {member.user.id === currentUser?.id && '(Kamu)'}
+                                                {member.user.name} {member.user.id === currentUser?.id && '(You)'}
                                             </Text>
                                         </View>
                                     ))}
@@ -299,8 +311,12 @@ export default function MatchDetailScreen() {
                         <TouchableOpacity style={styles.joinButton} onPress={() => router.push(`/match/${id}/reserve`)}>
                             <Text style={styles.joinButtonText}>Ikut Tanding</Text>
                         </TouchableOpacity>
+                    ) : isPendingApproval ? (
+                        <View style={[styles.joinButton, { backgroundColor: '#FFF3E0', shadowOpacity: 0 }]}> 
+                            <Text style={[styles.joinButtonText, { color: '#E65100' }]}>Status Pending Approval</Text>
+                        </View>
                     ) : (
-                        <View style={[styles.joinButton, { backgroundColor: '#E0E0E0', shadowOpacity: 0 }]}>
+                        <View style={[styles.joinButton, { backgroundColor: '#E0E0E0', shadowOpacity: 0 }]}> 
                             <Text style={[styles.joinButtonText, { color: '#757575' }]}>Kamu Sudah Terdaftar</Text>
                         </View>
                     )}

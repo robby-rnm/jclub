@@ -5,7 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { useState, useEffect } from 'react';
-import { api, Match } from '@/services/api';
+import { api, Match, Booking as ApiBooking } from '@/services/api';
 import { format, parseISO } from 'date-fns';
 import { id as idID } from 'date-fns/locale';
 
@@ -18,15 +18,13 @@ export const renderInitials = (name?: string) => {
     return name.split(" ").map(n => n[0]).join("").substring(0, 2).toUpperCase();
 };
 
-interface Booking {
-    id: string;
-    user_id: string;
+interface Booking extends ApiBooking {
     user: {
         id: string;
         name: string;
         email: string;
     };
-    status: 'confirmed' | 'waitlist' | 'cancelled';
+    status: 'pending' | 'approved' | 'registered' | 'confirmed' | 'waitlist' | 'cancelled' | 'rejected';
     is_paid: boolean;
     waitlist_order: number;
 }
@@ -36,6 +34,7 @@ export default function ParticipantListScreen() {
     const params = useLocalSearchParams();
     const [matchDetails, setMatchDetails] = useState<Match | null>(null);
     const [confirmed, setConfirmed] = useState<Booking[]>([]);
+    const [pending, setPending] = useState<Booking[]>([]);
     const [waitlist, setWaitlist] = useState<Booking[]>([]);
     const [currentUser, setCurrentUser] = useState<any>(null);
     const [loading, setLoading] = useState(true);
@@ -72,23 +71,24 @@ export default function ParticipantListScreen() {
 
     const processBookings = (bookings: any[]) => {
         const conf: Booking[] = [];
+        const pend: Booking[] = [];
         const wait: Booking[] = [];
 
         bookings.forEach((b: any) => {
-            // Map backend/API response to local Booking interface if needed
-            // Handle both Lowercase (new) and PascalCase (old) from backend to be safe
-            const status = b.status || b.Status;
+            const status = (b.status || b.Status || '').toLowerCase();
 
-            if (status === 'confirmed') {
+            if (['confirmed', 'approved', 'registered'].includes(status)) {
                 conf.push(b);
+            } else if (status === 'pending') {
+                pend.push(b);
             } else if (status === 'waitlist') {
                 wait.push(b);
             }
         });
 
-        // Ensure waitlist is sorted
-        wait.sort((a, b) => a.waitlist_order - b.waitlist_order);
+        wait.sort((a, b) => (a.waitlist_order || 0) - (b.waitlist_order || 0));
         setConfirmed(conf);
+        setPending(pend);
         setWaitlist(wait);
     };
 
@@ -96,6 +96,32 @@ export default function ParticipantListScreen() {
     const creatorId = matchDetails?.creator?.id || matchDetails?.creator?.id;
     const isOwner = creatorId && currentUser?.id === creatorId;
     const canManage = isOwner;
+
+    const approveBooking = async (booking: Booking) => {
+        if (!canManage) return;
+
+        try {
+            await api.approveBooking(booking.id);
+            await fetchMatch();
+            Alert.alert('Berhasil', 'Pendaftaran berhasil disetujui');
+        } catch (e: any) {
+            console.error(e);
+            Alert.alert('Error', e.message || 'Gagal menyetujui pendaftaran');
+        }
+    };
+
+    const rejectBooking = async (booking: Booking) => {
+        if (!canManage) return;
+
+        try {
+            await api.rejectBooking(booking.id);
+            await fetchMatch();
+            Alert.alert('Berhasil', 'Pendaftaran berhasil ditolak');
+        } catch (e: any) {
+            console.error(e);
+            Alert.alert('Error', e.message || 'Gagal menolak pendaftaran');
+        }
+    };
 
     const togglePayment = async (booking: Booking) => {
         if (!canManage) return;
@@ -172,7 +198,7 @@ export default function ParticipantListScreen() {
 
                 {/* Actions */}
                 <View style={styles.actions}>
-                    {!isWaitlist && (
+                    {!isWaitlist && item.status !== 'pending' && (
                         <TouchableOpacity
                             onPress={() => togglePayment(item)}
                             disabled={!canManage}
@@ -193,7 +219,18 @@ export default function ParticipantListScreen() {
                         </TouchableOpacity>
                     )}
 
-                    {canManage && (
+                    {item.status === 'pending' && canManage && (
+                        <View style={{ flexDirection: 'row', gap: 8 }}>
+                            <TouchableOpacity style={[styles.actionBtn, { backgroundColor: '#E8F5E9' }]} onPress={() => approveBooking(item)}>
+                                <Ionicons name="checkmark" size={18} color="#2E7D32" />
+                            </TouchableOpacity>
+                            <TouchableOpacity style={[styles.actionBtn, { backgroundColor: '#FFEBEE' }]} onPress={() => rejectBooking(item)}>
+                                <Ionicons name="close" size={18} color="#C62828" />
+                            </TouchableOpacity>
+                        </View>
+                    )}
+
+                    {canManage && !isSelf && item.status !== 'pending' && (
                         <TouchableOpacity
                             style={styles.actionBtn}
                             onPress={() => cancelBooking(item)}
@@ -233,6 +270,21 @@ export default function ParticipantListScreen() {
                     <Text style={styles.emptyText}>Belum ada pemain terdaftar.</Text>
                 ) : (
                     confirmed.map((item, index) => renderItem(item, index, false))
+                )}
+
+                {pending.length > 0 && (
+                    <>
+                        <View style={[styles.sectionHeader, { marginTop: 24 }]}> 
+                            <Text style={styles.sectionTitle}>Pending Approval ({pending.length})</Text>
+                            <View style={[styles.waitlistBadge, { backgroundColor: '#FFF3E0' }]}> 
+                                <Text style={[styles.waitlistBadgeText, { color: '#E65100' }]}>Menunggu approval</Text>
+                            </View>
+                        </View>
+                        <View style={styles.infoBox}>
+                            <Text style={styles.infoBoxText}>⏳ Pendaftar di bawah ini belum masuk peserta resmi sampai disetujui pemilik club.</Text>
+                        </View>
+                        {pending.map((item, index) => renderItem(item, index, false))}
+                    </>
                 )}
 
                 {/* Waitlist Section */}

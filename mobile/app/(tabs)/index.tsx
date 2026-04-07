@@ -34,8 +34,17 @@ export default function HomeScreen() {
       ]);
 
       if (profileData) setCurrentUser(profileData);
+
+      const now = new Date();
+      const upcomingJoinedMatches = myMatchesData
+        .filter((match) => {
+          const matchDate = new Date(match.date);
+          return !isNaN(matchDate.getTime()) && matchDate >= now;
+        })
+        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
       setMatches(matchesData.reverse());
-      setMyMatches(myMatchesData);
+      setMyMatches(upcomingJoinedMatches);
       setMyClubs(clubsData);
     } catch (e) {
       console.error(e);

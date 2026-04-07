@@ -256,7 +256,7 @@ export default function ReserveSlotScreen() {
             {/* Footer Button */}
             < SafeAreaView edges={['bottom']} style={styles.footer} >
                 <TouchableOpacity style={[styles.payButton, !position && { opacity: 0.5 }]} onPress={handlePay} disabled={!position}>
-                    <Text style={styles.payButtonText}>Lanjut Bayar</Text>
+                    <Text style={styles.payButtonText}>Daftar Main</Text>
                 </TouchableOpacity>
             </SafeAreaView >
         </View >
