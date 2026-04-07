@@ -19,6 +19,7 @@ export default function HomeScreen() {
 
   const [matches, setMatches] = useState<Match[]>([]); // "Info Hari Ini" matches
   const [myMatches, setMyMatches] = useState<Match[]>([]); // "Jadwal Tanding Kamu"
+  const [pendingMatches, setPendingMatches] = useState<Match[]>([]); // "Jadwal Tanding Pending"
   const [myClubs, setMyClubs] = useState<Club[]>([]);  // "Club Saya"
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -43,8 +44,18 @@ export default function HomeScreen() {
         })
         .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
+      const getMyBookingStatus = (match: Match) => {
+        const bookings = Array.isArray(match.bookings) ? match.bookings : [];
+        const myBooking = bookings.find((booking) => booking.user_id === profileData?.id);
+        return (myBooking?.status || '').toLowerCase();
+      };
+
+      const pendingJoinedMatches = upcomingJoinedMatches.filter((match) => getMyBookingStatus(match) === 'pending');
+      const approvedJoinedMatches = upcomingJoinedMatches.filter((match) => getMyBookingStatus(match) !== 'pending');
+
       setMatches(matchesData.reverse());
-      setMyMatches(upcomingJoinedMatches);
+      setMyMatches(approvedJoinedMatches);
+      setPendingMatches(pendingJoinedMatches);
       setMyClubs(clubsData);
     } catch (e) {
       console.error(e);
@@ -131,7 +142,44 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        {/* Jadwal Tanding Kamu (NEW) */}
+        {/* Jadwal Tanding Pending */}
+        <View style={styles.sectionContainer}>
+          <View style={styles.sectionHeaderRow}>
+            <Text style={styles.sectionTitle}>Jadwal Tanding Pending</Text>
+            {pendingMatches.length > 0 && (
+              <View style={styles.pendingBadge}>
+                <Text style={styles.pendingBadgeText}>{pendingMatches.length} pending</Text>
+              </View>
+            )}
+          </View>
+          {pendingMatches.length > 0 ? (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 16 }}>
+              {pendingMatches.map((match) => (
+                <TouchableOpacity
+                  key={match.id}
+                  style={[styles.matchCard, styles.pendingMatchCard]}
+                  onPress={() => router.push(`/match/${match.id}`)}
+                >
+                  <View style={[styles.matchDateBadge, styles.pendingDateBadge]}>
+                    <Text style={styles.matchDateText}>{formatDate(match.date)}</Text>
+                    <Text style={styles.matchTimeText}>{formatTime(match.date)}</Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.matchTitle} numberOfLines={1}>{match.title}</Text>
+                    <Text style={styles.matchLocation} numberOfLines={1}>{match.location}</Text>
+                    <Text style={styles.pendingStatusText}>Menunggu approval club</Text>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          ) : (
+            <View style={styles.emptyCard}>
+              <Text style={styles.emptyText}>Tidak ada jadwal tanding yang masih pending.</Text>
+            </View>
+          )}
+        </View>
+
+        {/* Jadwal Tanding Kamu */}
         <View style={styles.sectionContainer}>
           <Text style={styles.sectionTitle}>Jadwal Tanding Kamu</Text>
           {myMatches.length > 0 ? (
@@ -279,6 +327,23 @@ const styles = StyleSheet.create({
     color: TEXT_DARK,
     marginBottom: 16,
   },
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  pendingBadge: {
+    backgroundColor: '#FFF3E0',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
+  },
+  pendingBadgeText: {
+    color: '#E65100',
+    fontSize: 12,
+    fontWeight: '700',
+  },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -409,6 +474,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginRight: 12,
   },
+  pendingMatchCard: {
+    borderColor: '#FFE0B2',
+    backgroundColor: '#FFFDF8',
+  },
+  pendingDateBadge: {
+    backgroundColor: '#FFF3E0',
+  },
   matchDateText: {
     fontSize: 14,
     fontWeight: '700',
@@ -427,6 +499,12 @@ const styles = StyleSheet.create({
   matchLocation: {
     fontSize: 12,
     color: '#757575',
+  },
+  pendingStatusText: {
+    marginTop: 6,
+    fontSize: 12,
+    color: '#E65100',
+    fontWeight: '600',
   },
   emptyCard: {
     padding: 20,
